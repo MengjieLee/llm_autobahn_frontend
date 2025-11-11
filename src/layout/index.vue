@@ -156,7 +156,7 @@ const handleClickOutside = () => {
 		.sidebar {
 			pointer-events: none;
 			// transition-duration: 0.3s;
-			transform: translate3d(- v.$sideBarWidth, 0, 0);
+			transform: translate3d(-#{v.$sideBarWidth}, 0, 0);
 		}
 	}
 }
