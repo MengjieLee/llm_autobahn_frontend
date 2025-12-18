@@ -37,6 +37,11 @@ export default defineConfig(({
         '@': fileURLToPath(new URL('./src', import.meta.url))
       },
     },
+    // 新增/修改：配置 server 端口
+    server: {
+      port: 8735, // 自定义默认端口为 8735
+      strictPort: true, // 可选：端口被占用时直接报错（默认自动换端口）
+    },
     css: {
       // Customizing themes with unplugin-vue-components
       preprocessorOptions: {
