@@ -1,10 +1,13 @@
 <template>
   <el-dropdown trigger="click" @command="handleCommand">
-    <div class="avatar-container" :style="{
-        width: size,
-        height: size
-    }">
-      <img-load :src="ctx.userInfo.avatar" defaultName="user" backgroundColor="rgba(0, 0, 0, .05)" defaultColor="var(--el-color-primary)" defaultWidth="50%" defaultHeight="50%" />
+    <div class="user-trigger">
+      <div class="avatar-container" :style="{
+          width: size,
+          height: size
+      }">
+        <img-load :src="ctx.userInfo.avatar" defaultName="user" backgroundColor="rgba(0, 0, 0, .05)" defaultColor="var(--el-color-primary)" defaultWidth="50%" defaultHeight="50%" />
+      </div>
+      <span class="username">{{ ctx?.userInfo?.name || '' }}</span>
     </div>
     <template v-slot:dropdown>
       <el-dropdown-menu>
@@ -69,5 +72,17 @@ const handleCommand = (command) => {
   display: inline-block;
   border-radius: 10px;
   overflow: hidden;
+}
+
+.user-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.username {
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+  line-height: 1;
 }
 </style>

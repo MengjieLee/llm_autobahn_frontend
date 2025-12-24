@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-container">
     <div class="dashboard-text">name: {{ ctx.userInfo.name }}</div>
-    hi there! this is dashboard page
+    hi there! this is dashboard page!
   </div>
 </template>
 

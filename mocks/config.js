@@ -11,14 +11,14 @@ export const users = {
   'admin-token': {
     roles: ['admin'],
     introduction: 'I am a super administrator',
-    avatar: 'https://avatars.githubusercontent.com/u/9276835?s=400&u=c7dc09e69d8bec0b056ee69e084131b5dd81fbcd&v=4',
-    name: 'Super Admin',
+    avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80',
+    name: '正在开发中',
     userId: 1
   },
   'editor-token': {
     roles: ['editor'],
     introduction: 'I am an editor',
-    avatar: 'https://avatars.githubusercontent.com/u/9276835?s=400&u=c7dc09e69d8bec0b056ee69e084131b5dd81fbcd&v=4',
+    avatar: 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif?imageView2/1/w/80/h/80',
     name: 'Normal Editor',
     userId: 2
   }
