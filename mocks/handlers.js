@@ -3,10 +3,12 @@ import {
 } from 'msw'
 import user from './user'
 import table from './table'
+import processSchedulerTable from './processSchedulerTable'
 // // { request, params, cookies }
 const handlers = [
   ...user,
   ...table,
+  ...processSchedulerTable,
 ];
 
 export default handlers.map(({

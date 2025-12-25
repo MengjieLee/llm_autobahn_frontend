@@ -32,14 +32,15 @@
 
 本项目提供一个轻量级、UI极简的 Vue admin 后台，采用最新稳定依赖，减少升级维护成本，让开发者更专注于业务逻辑。
 
-**Demo:** <https://chocho-1115.github.io/vue-admin/>
+**Demo:** 即将上线
 
 > [!NOTE]
-> 项目前期ui参考了 [vue-admin-template](https://github.com/PanJiaChen/vue-admin-template)
+
+> 项目核心组件参考 [vue-admin-template](https://github.com/PanJiaChen/vue-admin-template)
 
 ## 🎉 技术栈
 
-**项目使用[create-vue 3.x](https://github.com/vuejs/create-vue)从零开始创建，基于 `vite 6.x` 进行版本构建，建议 [Node.js](https://nodejs.org/) 使用较新版本。**
+**项目使用[create-vue 3.x](https://github.com/vuejs/create-vue)从零开始创建，基于 `vite 6.x` 进行版本构建，建议 [Node.js](若未安装 node 请移步 [nvm](https://nodejs.org/en/download/current)) 使用较新版本。**
 
 主要集成了以下技术栈：
 
@@ -59,12 +60,12 @@
 
 ```
 # 克隆项目
-git clone https://github.com/chocho-1115/vue-admin.git
+git clone https://github.com/MengjieLee/llm_autobahn_frontend.git
 
 # 进入项目目录
 cd vue-admin
 
-# 安装依赖
+# 安装依赖 
 npm install
 
 # 启动服务

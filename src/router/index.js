@@ -5,6 +5,7 @@ import {
 } from 'vue-router'
 
 import nestedRouter from './modules/nested'
+import sqlStudio from './modules/sqlStudio'
 
 import Layout from '@/layout/index.vue'
 import {
@@ -14,7 +15,8 @@ import {
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_BASE_URL),
-  routes: [{
+  routes: [
+    {
       path: '/account/login',
       name: 'login',
       hidden: true,
@@ -36,6 +38,7 @@ const router = createRouter({
         }
       }, ]
     },
+    sqlStudio,
     {
       path: '/about',
       component: Layout,
@@ -132,7 +135,7 @@ const router = createRouter({
       path: '/external-link',
       component: Layout,
       children: [{
-        path: 'https://github.com/chocho-1115/vue-admin',
+        path: 'https://github.com/MengjieLee/llm_autobahn_frontend#',
         meta: {
           title: 'External Link',
           icon: 'link'
