@@ -94,19 +94,41 @@ const fetchData = () => {
 
 const handleOutputCopy = async (outputPath) => {
   try {
-    // 统一转成字符串（如果是对象，转成JSON格式）
+    // 1. 统一格式化复制文本（对象转格式化JSON，其他转字符串）
     const copyText = typeof outputPath === 'object' 
-      ? JSON.stringify(outputPath, null, 2) // 格式化JSON，可读性更好
+      ? JSON.stringify(outputPath, null, 2)
       : String(outputPath);
 
-    // 核心：调用Clipboard API写入剪贴板
-    await navigator.clipboard.writeText(copyText);
-    
-    // 复制成功提示（可选）
-    ElMessage?.success(`导出路径 ${outputPath} 复制成功！`) || alert(`导出路径 ${outputPath} 复制成功！`);
-    console.log('导出路径复制内容：', copyText);
+    let copySuccess = false;
+    // 2. 优先使用 原生Clipboard API（安全上下文专用）
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(copyText);
+      copySuccess = true;
+    } else {
+      // 3. 降级方案：创建临时文本框 + 原生选中复制（兼容HTTP/非安全上下文）
+      const tempInput = document.createElement('input');
+      // 隐藏临时输入框（不影响页面布局）
+      tempInput.style.position = 'absolute';
+      tempInput.style.left = '-9999px';
+      tempInput.style.top = '-9999px';
+      // 赋值并选中文本
+      tempInput.value = copyText;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      // 执行复制（原生document.execCommand）
+      copySuccess = document.execCommand('copy');
+      // 移除临时节点
+      document.body.removeChild(tempInput);
+    }
+
+    // 4. 复制结果反馈
+    if (copySuccess) {
+      ElMessage?.success(`导出路径 ${outputPath} 复制成功！`) || alert(`导出路径 ${outputPath} 复制成功！`);
+      console.log('导出路径复制内容：', copyText);
+    } else {
+      throw new Error('剪贴板操作失败');
+    }
   } catch (err) {
-    // 复制失败处理（比如浏览器不支持、用户拒绝权限）
     ElMessage?.error('导出路径复制失败，请手动复制！') || alert('导出路径复制失败，请手动复制！');
     console.error('导出路径复制失败：', err);
   }

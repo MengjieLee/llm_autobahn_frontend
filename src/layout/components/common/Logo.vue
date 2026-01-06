@@ -24,7 +24,7 @@ const props = defineProps({
         default: 'dark', // dark light
     },
 })
-const title = ref('Vue Admin')
+const title = ref('Data Autobahn')
 </script>
 
 <style lang="scss" scoped>
@@ -41,25 +41,22 @@ const title = ref('Vue Admin')
   position: relative;
   // width: 100%;
   height: 50px;
-  line-height: 50px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   color: var(--el-text-color-primary);
   .logo {
     width: 32px;
     height: 32px;
-    vertical-align: middle;
-    
   }
   .title {
     display: inline-block;
     margin: 0;
     padding-left: 12px;
     font-weight: 600;
-    line-height: 50px;
     font-size: 14px;
     font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
-    vertical-align: middle;
   }
 }
 </style>

@@ -28,56 +28,58 @@ import SvgIcon from './components/SvgIcon.vue'
 import { ctx } from './store'
 import './permission'
 
-async function enableMocking() {
-  if (import.meta.env.MODE !== 'development') {
-    return
-  }
+// 注释掉 mockServiceWorker，改用真实的请求
+// async function enableMocking() {
+//   if (import.meta.env.MODE !== 'development') {
+//     return
+//   }
 
-  const { worker } = await import('../mocks/browser')
+//   const { worker } = await import('../mocks/browser')
 
-  // `worker.start()` returns a Promise that resolves
-  // once the Service Worker is up and ready to intercept requests.
-  return worker.start({
-    // quiet: true, // Disables all the logging from the library (e.g. the activation message, the intercepted requests’ messages).
-    serviceWorker: {
-      url: '/mockServiceWorker.js',
-    },
-    // Decide how to react to unhandled requests (i.e. those that do not have a matching request handler).
-    // filter warnings
-    onUnhandledRequest(request, print) {
-      const url = new URL(request.url)
-      if (url.pathname.includes('/dev-api')) {
-        print.warning()
-      }
-      return
-    },
-  })
-}
+//   // `worker.start()` returns a Promise that resolves
+//   // once the Service Worker is up and ready to intercept requests.
+//   return worker.start({
+//     // quiet: true, // Disables all the logging from the library (e.g. the activation message, the intercepted requests' messages).
+//     serviceWorker: {
+//       url: '/mockServiceWorker.js',
+//     },
+//     // Decide how to react to unhandled requests (i.e. those that do not have a matching request handler).
+//     // filter warnings
+//     onUnhandledRequest(request, print) {
+//       const url = new URL(request.url)
+//       if (url.pathname.includes('/dev-api')) {
+//         print.warning()
+//       }
+//       return
+//     },
+//   })
+// }
 
-enableMocking().then(async () => {
-  // await import('@/permission')
+// enableMocking().then(async () => {
+//   // await import('@/permission')
 
-  const app = createApp(App)
-  
-  // ======================== dayjs 全局挂载优化 ========================
-  // 1. 基础挂载（选项式API可用 this.$dayjs）
-  app.config.globalProperties.$dayjs = dayjs
-  // 可选：组合式API推荐：provide 方式（更贴合Vue3生态，TS友好）
-  // app.provide('$dayjs', dayjs)
-  // 2. 可选：封装全局通用格式化方法（减少组件重复代码）
-  app.provide('$formattedCNTime', (time, format = 'YYYY-MM-DD HH:mm:ss') => {
-    if (!time) return '-' // 容错：空值返回占位符
-    return dayjs(time).format(format)
-  })
+// 直接启动应用，不再使用 mockServiceWorker
+const app = createApp(App)
 
-  // 原有逻辑保留
-  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-    app.component(key, component)
-  }
-  app.use(router) // It must be after the enablemock function
-
-  app.provide('context', ctx)
-  app.component('svg-icon', SvgIcon)
-
-  app.mount('#app')
+// ======================== dayjs 全局挂载优化 ========================
+// 1. 基础挂载（选项式API可用 this.$dayjs）
+app.config.globalProperties.$dayjs = dayjs
+// 可选：组合式API推荐：provide 方式（更贴合Vue3生态，TS友好）
+// app.provide('$dayjs', dayjs)
+// 2. 可选：封装全局通用格式化方法（减少组件重复代码）
+app.provide('$formattedCNTime', (time, format = 'YYYY-MM-DD HH:mm:ss') => {
+  if (!time) return '-' // 容错：空值返回占位符
+  return dayjs(time).format(format)
 })
+
+// 原有逻辑保留
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+app.use(router) // It must be after the enablemock function
+
+app.provide('context', ctx)
+app.component('svg-icon', SvgIcon)
+
+app.mount('#app')
+// })

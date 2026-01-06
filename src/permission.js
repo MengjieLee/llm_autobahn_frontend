@@ -1,11 +1,11 @@
 import router from './router'
 import {
-  getInfo
-} from './api/user'
-import {
   ctx,
   dispatch
 } from './store'
+import {
+  getUserInfoFromToken
+} from '@/utils/auth'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 
@@ -24,7 +24,7 @@ router.beforeEach(async (to, from, next) => {
   NProgress.start()
 
   // set page title
-  document.title = to.meta.title ? `${to.meta.title} - Vue Admin` : `Vue Admin`
+  document.title = to.meta.title ? `${to.meta.title} - Data Autobahn` : `Data Autobahn`
 
   // determine whether the user has logged in
   const hasToken = dispatch.user.getToken()
@@ -44,14 +44,12 @@ router.beforeEach(async (to, from, next) => {
         next()
       } else {
         try {
-          // get user info
-          const {
-            body
-          } = await getInfo(hasToken)
-          if (!body) {
-            throw new Error("Verification failed, please Login again.");
+          // 使用本地 token + mock 文件解析用户信息
+          const userInfo = await getUserInfoFromToken(hasToken)
+          if (!userInfo) {
+            throw new Error('本地未找到对应的用户信息，请重新授权登录')
           }
-          dispatch.user.saveInfo(body)
+          dispatch.user.saveInfo(userInfo)
           next()
         } catch (error) {
           // remove token and go to login page to re-login
@@ -60,7 +58,7 @@ router.beforeEach(async (to, from, next) => {
           if (whiteList.indexOf(to.path) === -1) {
             next(`/account/login?redirect=${to.path}`)
             NProgress.done()
-          }else{
+          } else {
             next()
           }
         }

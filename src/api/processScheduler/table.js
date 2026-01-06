@@ -1,7 +1,7 @@
-import request from '@/utils/request'
+import { processSchedulerService } from '@/utils/request'
 
 export function getProcessSchedulerList(params) {
-  return request({
+  return processSchedulerService({
     url: '/processSchedulerTable/list',
     method: 'get',
     params

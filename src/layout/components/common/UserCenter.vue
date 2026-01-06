@@ -45,10 +45,12 @@ const ctx = inject('context')
 const redirect = route.fullPath || '/'
 
 const onLogout = async () => {
-  logout().then(() => {
-    dispatch.user.removeInfo()
-    router.push(`/account/login?redirect=${redirect}`)
-  })
+  dispatch.user.removeInfo()
+  router.push(`/account/login?redirect=${redirect}`)
+  // logout().then(() => {
+  //   dispatch.user.removeInfo()
+  //   router.push(`/account/login?redirect=${redirect}`)
+  // })
 }
 
 const handleCommand = (command) => {
