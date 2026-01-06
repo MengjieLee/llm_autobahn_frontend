@@ -33,7 +33,7 @@
       </div>
 
       <div class="tips tips-center">
-        <span>致力于大模型数据全链路平台! ✌🏻(＾－＾)V</span>
+        <span>致力于打造大模型/数据的全链路平台!  ✌🏻(＾－＾)V</span>
       </div>
     </div>
   </div>
@@ -80,7 +80,7 @@ const handleLogin = async () => {
     // 1. 从 /user/login 请求的响应 Headers 中获取 JWT
     const jwt = await resolveJwtFromContext()
     if (!jwt) {
-      ElMessage.error('未获取到网关提供的认证信息（X-Zt-Authorization），请联系管理员检查配置')
+      ElMessage.error('未获取到网关提供的认证信息（X-Zt-Authorization），请联系管理员 👷🏻‍♂️ v_limengjie@baidu.com 检查配置')
       return
     }
 
@@ -90,7 +90,7 @@ const handleLogin = async () => {
     // 3. 解析 JWT
     const payload = parseJwtPayload(jwt)
     if (!payload) {
-      ElMessage.error('JWT 解析失败，请联系管理员')
+      ElMessage.error('JWT 解析失败，请联系管理员 👷🏻‍♂️ v_limengjie@baidu.com')
       return
     }
 
@@ -101,7 +101,7 @@ const handleLogin = async () => {
     const name = payload.name || username || ''
 
     if (!username) {
-      ElMessage.error('JWT 中未找到 username 信息，请联系管理员')
+      ElMessage.error('JWT 中未找到 username 信息，请联系管理员 👷🏻‍♂️ v_limengjie@baidu.com')
       return
     }
 
@@ -128,7 +128,7 @@ const handleLogin = async () => {
     router.push(redirect)
   } catch (e) {
     console.error(e)
-    ElMessage.error('授权登录失败，请稍后重试或联系管理员')
+    ElMessage.error('授权登录失败，请稍后重试或联系管理员 👷🏻‍♂️ v_limengjie@baidu.com')
   } finally {
     loading.value = false
   }
@@ -237,8 +237,8 @@ $light_gray: #f5f7fa;
 }
 
 .auth-circle {
-	width: 196px;
-	height: 196px;
+	width: 180px;
+	max-height: 180px;
 	border-radius: 10%;
 	border: 2px solid rgba(255, 255, 255, 0.92);
 	display: flex;
