@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-form">
       <div class="title-container">
-        <h3 class="title">欢迎使用 Data Autobahn</h3>
+        <h3 class="title">欢迎使用 Data Autobahn <span>(v{{version}})</span></h3>
       </div>
 
       <div class="auth-diagram">
@@ -56,6 +56,8 @@ import {
 } from '@/utils/auth'
 import logoBaidu from '@/assets/logo_baidu.svg'
 import logoApp from '@/assets/logo.svg'
+
+const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0'
 
 const router = useRouter()
 const route = useRoute()

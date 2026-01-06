@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "author": "chocho-1115 <849890769@qq.com>",
+  "author": "limengjiejj@hotmail.com",
   "scripts": {
     "dev": "vite --host",
     "build:stage": "vite build --mode staging",
