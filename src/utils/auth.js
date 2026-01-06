@@ -1,5 +1,7 @@
 // 本地认证相关工具方法 & 配置
 // 约定的 LocalStorage key，与后端/网关约定保持一致
+import CryptoJS from 'crypto-js'
+
 import {
   DATA_VORTEX_LS_JWT_ID,
   DATA_VORTEX_LS_TOKEN_ID,
@@ -22,8 +24,12 @@ export {
 export const LOCAL_USER_CONFIG = {
   'v_limengjie03': {
     name: '李梦杰',
-    groups: ['official', 'group_a'],
+    groups: ['official',],
   },
+  'chenjieting': {
+    name: '陈捷挺',
+    groups: ['official',],
+  }
 }
 
 // 解析 JWT，返回 payload 对象
@@ -46,25 +52,14 @@ export function parseJwtPayload(jwt) {
 }
 
 export async function sha256Hex(text) {
-  // 1. 严格校验浏览器环境 & 安全上下文 & Crypto API 可用性
-  if (typeof window === 'undefined') {
-    throw new Error('This function only runs in the browser environment');
+  // 判空校验（复用原逻辑的健壮性）
+  if (typeof text !== 'string') {
+    throw new Error('参数必须是字符串类型');
   }
-  // 浏览器crypto对象优先级：window.crypto > globalThis.crypto
-  const cryptoObj = window.crypto || globalThis.crypto;
-  if (!cryptoObj || !cryptoObj.subtle) {
-    throw new Error(
-      'Web Crypto API is not available. \n' +
-      '👉 解决方案：1. 使用HTTPS协议 2. 本地开发用localhost/127.0.0.1'
-    );
-  }
-
-  // 2. 标准SHA256哈希流程
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text); // 文本转Uint8Array二进制
-  const hashBuffer = await cryptoObj.subtle.digest('SHA-256', data); // 计算哈希
-  const hashArray = Array.from(new Uint8Array(hashBuffer)); // 转8位无符号数组
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // 转64位十六进制字符串
+  // CryptoJS 核心哈希计算（纯JS实现，无环境限制）
+  const hash = CryptoJS.SHA256(text);
+  // 转为 64 位小写十六进制字符串（与原代码输出格式完全一致）
+  return CryptoJS.enc.Hex.stringify(hash);
 }
 
 // 根据 username 计算 token
