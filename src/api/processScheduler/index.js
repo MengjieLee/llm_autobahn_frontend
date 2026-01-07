@@ -7,3 +7,10 @@ export function getProcessSchedulerList(params) {
     params
   })
 }
+
+export function stopProcessScheduler(jobID) {
+  return processSchedulerService({
+    url: `/api/v1/jobs/${jobID}/stop`,
+    method: 'post',
+  })
+}

@@ -115,11 +115,12 @@ processSchedulerService.interceptors.request.use(
 processSchedulerService.interceptors.response.use(
   response => {
     const res = response.data
+    // console.log('processSchedulerService response.data:', res)
 
     // if the custom err_code is not 20000, it is judged as an error.
-    if (res.err_code !== 20000) {
+    if (res.err_code !== 0) {
       ElMessage({
-        message: res.message || 'Error',
+        message: res.err_msg || res.message || 'Error',
         type: 'error',
         duration: 5 * 1000
       })

@@ -11,6 +11,7 @@ title: 变更记录
 * 数据集纳管治理
 
 ### 更新记录
+* v0.0.8 | feat(SQL): 实现 SQL 导出页 | 2026-01-07 | 李梦杰
 * v0.0.7 | fix(auth): 兼容 http/https/localhost 不同环境下的 token 校验 | 2026-01-06 | 李梦杰
 * v0.0.6 | feat(version): 新增 version 控制 | 2026-01-06 | 李梦杰
 * v0.0.5 | feat(auth): 就绪 uuap 验证框架 | 2026-01-06 | 李梦杰

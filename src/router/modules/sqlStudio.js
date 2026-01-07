@@ -3,13 +3,14 @@ import Layout from '@/layout/index.vue'
 const sqlStudio = {
   path: '/sqlStudio',
   component: Layout,
-  redirect: '/sqlStudio/menu1',
+  redirect: '/sqlStudio/sqlViewer',
   name: 'SQLStudio',
   meta: {
     title: 'SQL Studio',
     icon: 'test'
   },
   children: [
+    
     // {
     //   path: 'menu1',
     //   component: () => import('@/views/sqlStudio/menu1/index.vue'), // Parent router-view
