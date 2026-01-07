@@ -19,7 +19,7 @@
     "axios": "^1.8.4",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.19",
-    "element-plus": "^2.9.9",
+    "element-plus": "^2.13.0",
     "normalize.css": "^8.0.1",
     "nprogress": "^0.2.0",
     "path-browserify-esm": "^1.0.6",
