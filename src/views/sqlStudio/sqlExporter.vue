@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-table :data="table.list" max-height="820" border fit highlight-current-row v-loading="table.listLoading" :row-click="handleTableRowClick">
+    <el-table :data="table.list" max-height="820" border stripe fit highlight-current-row v-loading="table.listLoading" :row-click="handleTableRowClick">
       <el-table-column align="center" label="ID" width="60">
         <template v-slot="scope">{{ scope.$index+1 }}</template>
       </el-table-column>
@@ -15,12 +15,12 @@
     <el-table-column 
       label="SQL 详情" 
       min-width="280"
-      class-name="sql-cell-col"
+      class-name="expand-cell-col"
     >
       <template v-slot="scope">
         <!-- 外层容器，绑定点击事件和动态样式 -->
         <div 
-          class="sql-cell"
+          class="expand-cell"
           @click="toggleExpand(scope.row)"
           :class="{ 'expanded': scope.row.isExpanded }"
           style="cursor: pointer;"
@@ -29,12 +29,12 @@
         </div>
       </template>
     </el-table-column>
-      <el-table-column label="导出至" show-overflow-tooltip min-width="280">
+      <el-table-column label="导出至" min-width="280">
         <template v-slot="scope">
           <el-row align="middle">
             <el-col :span="22">
               <div 
-                class="sql-cell"
+                class="expand-cell"
                 @click="toggleExpand(scope.row)"
                 :class="{ 'expanded': scope.row.isExpanded }"
                 style="cursor: pointer;"
@@ -194,7 +194,7 @@ const toggleExpand = (row) => {
 </script>
 
 <style scoped>
-.sql-cell {
+.expand-cell {
   display: -webkit-box;
   line-clamp: 2; /* 兼容标准属性 */
   -webkit-line-clamp: 2; /* 限制显示行数 */
@@ -208,7 +208,7 @@ const toggleExpand = (row) => {
 }
 
 /* 展开状态：显示完整内容 */
-.sql-cell.expanded {
+.expand-cell.expanded {
   line-clamp: unset; /* 兼容标准属性 */
   -webkit-line-clamp: unset; /* 取消行数限制 */
   max-height: none; /* 取消高度限制 */
@@ -216,7 +216,7 @@ const toggleExpand = (row) => {
 }
 
 /* 让该列的 cell 允许多行换行（覆盖 el-table 的单行省略样式） */
-.sql-cell-col .cell {
+.expand-cell-col .cell {
   white-space: normal !important;
   overflow: visible;
   text-overflow: initial;

@@ -123,6 +123,11 @@ const handleLogin = async () => {
       }
     }
     dispatch.user.saveInfo(userInfo)
+	ElNotification({
+      title: `欢迎 ${name} 🎉`,
+      message: `很高兴你能选择使用 Data Vortex!`,
+      type: 'success',
+    })
 
     // 7. 跳转到目标页面
     router.push(redirect)
