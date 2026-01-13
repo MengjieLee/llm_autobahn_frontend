@@ -56,7 +56,7 @@
                           :src="img"
                           :preview-src-list="scope.row.images"
                           :initial-index="index"
-                          fit="cover"
+                          fit="fill"
                           show-progress
                           :preview-teleported="true"
                         >
@@ -104,7 +104,7 @@
                       </div>
                     </el-col>
                     <el-col :xs="2" :sm="2" :md="2" :lg="1">
-                      <div class="conversations-trigger" @click.prevent="toggleConversationsExpand(scope.row)" style="cursor: pointer;">
+                      <div class="conversations-trigger" @click.prevent="toggleConversationsExpand(scope.$index, scope.row)" style="cursor: pointer;">
                         {...}
                       </div>
                     </el-col>
@@ -195,30 +195,41 @@
   <el-dialog
     v-model="isDialogOpen"
     fullscreen
-    title="数据透视概览"
     :append-to-body="true"
     @close="isDialogOpen = false"
   >
+    <template #header>
+      <div>
+        <span style="font-weight: 700; margin-right: 28px;">数据透视弹窗</span>
+        <el-button plain type="primary" icon="ArrowLeftBold" circle v-if="currentRow.idx > 0" @click="toggleCurrentRow(currentRow.idx - 1)"></el-button>
+        <el-button plain type="primary" icon="ArrowRightBold" circle v-if="currentRow.idx < tableData.length - 1" @click="toggleCurrentRow(currentRow.idx + 1)"></el-button>
+      </div>
+    </template>
     <div class="dialog-layout">
       <el-row :gutter="16">
-        <el-col v-if="dialogMediumShown" class="dialog-media" :xs="12" :sm="8" :md="8" :lg="6">
-          <el-image
-            v-for="(img, index) in currentRow.images"
-            :key="index"
-            class="dialog-left__image"
-            :src="img"
-            :preview-src-list="currentRow.images"
-            :initial-index="index"
-            fit="fill"
-            show-progress
-          >
-            <template #error>
-              <div class="dialog-left__image--fallback">加载失败</div>
-            </template>
-          </el-image>
+        <el-col v-if="dialogMediumShown" :xs="12" :sm="8" :md="8" :lg="6">
+          <el-divider content-position="left">媒体视图</el-divider>
+          <div class="dialog-media">
+            <el-image
+              v-for="(img, index) in currentRow.images"
+              :key="index"
+              class="dialog-left__image"
+              :src="img"
+              :preview-src-list="currentRow.images"
+              :initial-index="index"
+              fit="scale-down"
+              show-progress
+            >
+              <template #error>
+                <div class="dialog-left__image--fallback">加载失败</div>
+              </template>
+            </el-image>
+          </div>
         </el-col>
-        <el-col class="dialog-conversations" :xs="dialogMediumShown ? 12:20" :sm="dialogMediumShown ? 12:20" :md="dialogMediumShown ? 14:22" :lg="dialogMediumShown ? 16:22">
+        <el-col :xs="dialogMediumShown ? 12:20" :sm="dialogMediumShown ? 12:20" :md="dialogMediumShown ? 12:20" :lg="dialogMediumShown ? 14:20">
+          <el-divider content-position="left">JSON 视图</el-divider>
           <vue-json-pretty
+            class="dialog-conversations"
             :data="parsedConversations"
             :expand-depth="3"
             show-length
@@ -227,8 +238,9 @@
             highlight-hover
           />
         </el-col>
-        <el-col class="dialog-metadata" :xs="dialogMediumShown ? 24:4" :sm="dialogMediumShown ? 4:4" :md="dialogMediumShown ? 2:2" :lg="dialogMediumShown ? 2:2">
-          <div class="sql-viewer__detail" v-if="activeRow">
+        <el-col :xs="dialogMediumShown ? 24:4" :sm="dialogMediumShown ? 4:4" :md="dialogMediumShown ? 4:4" :lg="dialogMediumShown ? 4:4">
+          <el-divider content-position="left">#{{currentRow.idx + 1}} 元数据概览</el-divider>
+          <div class="dialog-metadata" v-if="activeRow">
             <div class="detail-section">
               <div
                 class="detail-label"
@@ -245,7 +257,7 @@
                   :src="img"
                   :preview-src-list="currentRow.images"
                   :initial-index="index"
-                  fit="cover"
+                  fit="fill"
                   show-progress
                 >
                   <!-- 图片加载失败占位 -->
@@ -304,9 +316,28 @@ const tableData = ref([
     tokens: 128
   },
   {
-    id: 1,
+    id: 2,
     images: [
       'https://dummyimage.com/600x400/fffeca/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/cc3ee3/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/fge434/ffffff.png&text=Data+Autobahn',
+    ],
+    conversations: "[{'from': 'human', 'value': '<image>\\nWhat is the specialty featured on the Homemade Crab Ramekin menu item?'}, {'from': 'gpt', 'value': 'The Homemade Crab Ramekin is fresh crab bound in a secret cheesy herby sauce, and is ready or customers to bake in the oven.'}]",
+    tokens: 128
+  },
+  {
+    id: 3,
+    images: [
+    'https://dummyimage.com/600x400/fffeca/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/333333/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/44ff44/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/17deaa/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/333333/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/fffeca/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/333333/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/44ff44/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/17deaa/ffffff.png&text=Data+Autobahn',
+      'https://dummyimage.com/600x400/333333/ffffff.png&text=Data+Autobahn',
       'https://dummyimage.com/600x400/cc3ee3/ffffff.png&text=Data+Autobahn',
       'https://dummyimage.com/600x400/fge434/ffffff.png&text=Data+Autobahn',
     ],
@@ -375,10 +406,10 @@ const currentRow = ref(null);
 // 纯文本默认为 false
 const dialogMediumShown = ref(false);
 
-
 // 点击后打开弹窗的方法
-const toggleConversationsExpand = (row) => {
+const toggleConversationsExpand = (idx, row) => {
   currentRow.value = row; // 把当前行数据传入弹窗
+  currentRow.value.idx = idx;
   isDialogOpen.value = true; // 打开弹窗
   dialogMediumShown.value = row?.images?.length > 0; // 默认显示图片预览
 };
@@ -409,6 +440,12 @@ const parsedConversations = computed(() => {
     return '数据格式异常，无法解析'
   }
 })
+
+const toggleCurrentRow = (idx) => {
+  console.log(idx)
+  currentRow.value = tableData.value[idx]
+  currentRow.value.idx = idx
+}
 
 </script>
 
@@ -607,7 +644,6 @@ const parsedConversations = computed(() => {
 }
 
 .sql-viewer__detail {
-  margin-top: 8px;
   max-height: 260px;
   overflow: auto;
 }
@@ -724,7 +760,7 @@ const parsedConversations = computed(() => {
 .dialog-layout {
   display: flex;
   width: 100%;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 120px);
   gap: 16px;
 }
 
@@ -733,7 +769,7 @@ const parsedConversations = computed(() => {
   padding: 16px;
   display: flex;
   flex-wrap: wrap;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 120px);
   gap: 12px;
   overflow: auto;
 }
@@ -757,15 +793,17 @@ const parsedConversations = computed(() => {
 }
 
 .dialog-conversations {
+  padding-top: 16px;
   white-space: pre-wrap;
   background: #fff;
-  border: 1px solid var(--el-border-color-lighter);
-  height: calc(100vh - 80px);
+  /* border: 1px solid var(--el-border-color-lighter); */
+  height: calc(100vh - 120px);
   overflow: auto;
 }
 
 .dialog-metadata {
-  height: calc(100vh - 80px);
+  padding-top: 16px;
+  height: calc(100vh - 120px);
 }
 
 
