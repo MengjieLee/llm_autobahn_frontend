@@ -11,6 +11,7 @@ title: 变更记录
 * 数据集纳管治理
 
 ### 更新记录
+* v0.0.10 | fix(sqlViewer): 更新 SQL Viewer 排版 | 2026-01-14 | 李梦杰
 * v0.0.9 | feat(SQLViewer): 基于 mock 数据实现 SQLViewer Layout | 2026-01-13 | 李梦杰
 * v0.0.8 | feat(SQL): 实现 SQL 导出页 | 2026-01-07 | 李梦杰
 * v0.0.7 | fix(auth): 兼容 http/https/localhost 不同环境下的 token 校验 | 2026-01-06 | 李梦杰

@@ -1,119 +1,108 @@
 <template>
-  <div class="sql-viewer">
-    <!-- 中间左右分栏主体区域 -->
-    <el-row :gutter="16" class="sql-viewer__body">
-      <!-- 左侧：数据预览表格 + 分页 -->
-      <el-col
-        :xs="24"
-        :sm="24"
-        :md="14"
-        :lg="16"
-        class="sql-viewer__left"
-      >
-        <el-card class="sql-viewer__card" shadow="never">
-          <!-- 表格主体区域：占满卡片中间高度，内部滚动 -->
-          <div class="sql-viewer__table-wrapper">
-            <el-table
-              :data="tableData"
-              border
-              fit
-              stripe
-              highlight-current-row
-              height="100%"
-              size="small"
-              style="width:100%"
-              @row-click="handleRowClick"
+  <el-row :gutter="16" class="sql-viewer__body">
+    <!-- 左侧：数据预览表格 + 分页 -->
+    <el-col :xs="14" :sm="14" :md="16" :lg="18" class="sql-viewer__left">
+      <el-card header="SQL Viewer【🚧 TODO 先 mock 实现布局，真实数据需要重写 Doris 服务】" shadow="hover" style="width: 100%" footer-class="sql-viewer-footer">
+        <!-- 表格主体区域：占满卡片中间高度，内部滚动 -->
+        <div class="sql-viewer__table-wrapper">
+          <el-table
+            :data="tableData"
+            border
+            fit
+            stripe
+            highlight-current-row
+            height="100%"
+            size="small"
+            @row-click="handleRowClick"
+          >
+            <!-- <el-table-column
+              type="index"
+              label="#"
+              width="60"
+              align="center"
+            /> -->
+            <el-table-column
+              prop="imageSummary"
+              label="images"
+              min-width="120"
+              class-name="expand-cell-col"
             >
-              <!-- <el-table-column
-                type="index"
-                label="#"
-                width="60"
-                align="center"
-              /> -->
-              <el-table-column
-                prop="imageSummary"
-                label="images"
-                min-width="120"
-                class-name="expand-cell-col"
-              >
-                <template #header>
-                <div class="sql-viewer__meta-title">images</div>
-                <div class="sql-viewer__meta-sub">list · lengths</div>
-                <div class="sql-viewer__tokens-bar">
-                  <span v-for="n in 4" :key="n" class="tokens-bar__item" />
-                </div>
-                </template>
-                <template #default="scope">
-                  <el-row align="middle">
-                    <el-col :xs="16" :sm="16" :md="16" :lg="18">
-                      <div v-if="scope.row.images && scope.row.images.length" class="expand-cell"
-                        :class="{ 'expanded': scope.row.isExpanded }">
-                        <!-- 循环渲染最多 3 张图片 -->
-                        <el-image
-                          v-for="(img, index) in (scope.row.isExpanded ? scope.row.images : scope.row.images.slice(0, 3))"
-                          :key="index"
-                          style="width: 36px; height: 36px; margin-right: 4px"
-                          :src="img"
-                          :preview-src-list="scope.row.images"
-                          :initial-index="index"
-                          fit="fill"
-                          show-progress
-                          :preview-teleported="true"
-                        >
-                          <!-- 图片加载失败占位 -->
-                          <template #error>
-                            <div class="image-thumb">加载失败</div>
-                          </template>
-                        </el-image>
-                      </div>
-                      <div v-else class="image-thumb" />
-                    </el-col>
-                    <el-col :xs="8" :sm="8" :md="8" :lg="6">
-                      <!-- 显示剩余额外媒体展开按钮 -->
-                      <div v-if="scope.row.images.length > 3 && !scope.row.isExpanded" class="medium-more-trigger" @click="toggleExpand(scope.row)" style="cursor: pointer;">
-                        展开<el-icon><View /></el-icon>
-                      </div>
-                      <div v-else-if="scope.row.images.length > 3" @click="toggleExpand(scope.row)" style="cursor: pointer;">
-                        收起<el-icon><Hide /></el-icon>
-                      </div>
-                    </el-col>
-                  </el-row>
-                    
-                </template>
-              </el-table-column>
-              <el-table-column
-                prop="textPreview"
-                label="texts"
-                min-width="260"
-              >
-                <template #header>
-                <div class="sql-viewer__meta-title">conversations</div>
-                <div class="sql-viewer__meta-sub">list · lengths</div>
-                <div class="sql-viewer__tokens-bar">
-                  <span v-for="n in 8" :key="n" class="tokens-bar__item" />
-                </div>
-                </template>
-                <template #default="scope">
-                  <el-row>
-                    <el-col :xs="22" :sm="22" :md="22" :lg="23">
-                      <div class="expand-cell"
-                      @click="toggleExpand(scope.row)"
-                      :class="{ 'expanded': scope.row.isExpanded }"
-                      style="cursor: pointer;">
-                        {{ scope.row.conversations}}
-                      </div>
-                    </el-col>
-                    <el-col :xs="2" :sm="2" :md="2" :lg="1">
-                      <div class="conversations-trigger" @click.prevent="toggleConversationsExpand(scope.$index, scope.row)" style="cursor: pointer;">
-                        {...}
-                      </div>
-                    </el-col>
-                  </el-row>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-
+              <template #header>
+              <div class="sql-viewer__meta-title">images</div>
+              <div class="sql-viewer__meta-sub">list · lengths</div>
+              <div class="sql-viewer__tokens-bar">
+                <span v-for="n in 4" :key="n" class="tokens-bar__item" />
+              </div>
+              </template>
+              <template #default="scope">
+                <el-row align="middle">
+                  <el-col :xs="16" :sm="16" :md="16" :lg="18">
+                    <div v-if="scope.row.images && scope.row.images.length" class="expand-cell"
+                      :class="{ 'expanded': scope.row.isExpanded }">
+                      <!-- 循环渲染最多 3 张图片 -->
+                      <el-image
+                        v-for="(img, index) in (scope.row.isExpanded ? scope.row.images : scope.row.images.slice(0, 3))"
+                        :key="index"
+                        style="width: 36px; height: 36px; margin-right: 4px"
+                        :src="img"
+                        :preview-src-list="scope.row.images"
+                        :initial-index="index"
+                        fit="fill"
+                        show-progress
+                        :preview-teleported="true"
+                      >
+                        <!-- 图片加载失败占位 -->
+                        <template #error>
+                          <div class="image-thumb">加载失败</div>
+                        </template>
+                      </el-image>
+                    </div>
+                    <div v-else class="image-thumb" />
+                  </el-col>
+                  <el-col :xs="8" :sm="8" :md="8" :lg="6">
+                    <!-- 显示剩余额外媒体展开按钮 -->
+                    <div v-if="scope.row.images.length > 3 && !scope.row.isExpanded" class="medium-more-trigger" @click="toggleExpand(scope.row)" style="cursor: pointer;">
+                      展开<el-icon><View /></el-icon>
+                    </div>
+                    <div v-else-if="scope.row.images.length > 3" @click="toggleExpand(scope.row)" style="cursor: pointer;">
+                      收起<el-icon><Hide /></el-icon>
+                    </div>
+                  </el-col>
+                </el-row>
+                  
+              </template>
+            </el-table-column>
+            <el-table-column
+              min-width="300"
+            >
+              <template #header>
+              <div class="sql-viewer__meta-title">conversations</div>
+              <div class="sql-viewer__meta-sub">list · lengths</div>
+              <div class="sql-viewer__tokens-bar">
+                <span v-for="n in 8" :key="n" class="tokens-bar__item" />
+              </div>
+              </template>
+              <template #default="scope">
+                <el-row>
+                  <el-col :xs="22" :sm="22" :md="22" :lg="23">
+                    <div class="expand-cell"
+                    @click="toggleExpand(scope.row)"
+                    :class="{ 'expanded': scope.row.isExpanded }"
+                    style="cursor: pointer;">
+                      {{ scope.row.conversations}}
+                    </div>
+                  </el-col>
+                  <el-col :xs="2" :sm="2" :md="2" :lg="1">
+                    <div class="conversations-trigger" @click.prevent="toggleConversationsExpand(scope.$index, scope.row)" style="cursor: pointer;">
+                      {...}
+                    </div>
+                  </el-col>
+                </el-row>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <template #footer>
           <!-- 底部分页，与 HuggingFace SQLStudio 类似的分页控制条 -->
           <div class="sql-viewer__pagination">
             <el-pagination
@@ -125,72 +114,63 @@
               @current-change="handlePageChange"
             />
           </div>
-        </el-card>
-      </el-col>
+        </template>
+      </el-card>
+    </el-col>
 
-      <!-- 右侧：SQL 编辑器 + 模板按钮 + 行详情 -->
-      <el-col
-        :xs="24"
-        :sm="24"
-        :md="10"
-        :lg="8"
-        class="sql-viewer__right"
-      >
-        <el-card class="sql-viewer__card sql-viewer__right-card" shadow="never">
-          <!-- SQL 编辑区域 -->
-          <div class="sql-viewer__sql-panel">
-            <div class="sql-viewer__sql-toolbar">
-              <span class="sql-viewer__sql-label">SQL 查询</span>
-              <div class="sql-viewer__sql-actions">
-                <el-button size="small" @click="applyTemplate('limit')">
-                  limit 查询
-                </el-button>
-                <el-button size="small" @click="applyTemplate('stat')">
-                  统计 Token 数分布
-                </el-button>
-                <el-button size="small" @click="applyTemplate('tableInfo')">
-                  查询 table 结构
-                </el-button>
-                <el-button size="small" @click="applyTemplate('catalog')">
-                  查询 catalog 列表
-                </el-button>
-              </div>
-            </div>
+    <!-- 右侧：SQL 编辑器 + 模板按钮 -->
+    <el-col :xs="10" :sm="10" :md="8" :lg="6" class="sql-viewer__right">
+      <el-card header="SQL 查询" shadow="hover" style="width: 100%" footer-class="sql-query-footer">
+        <!-- SQL 编辑区域 -->
+        <div class="sql-viewer__sql-panel">
+          <el-input
+            v-model="sql"
+            type="textarea"
+            class="sql-viewer__sql-input"
+            :rows="10"
+            resize="none"
+            placeholder="在此编写 SQL，例如：SELECT * FROM dataset LIMIT 10;"
+          />
 
-            <el-input
-              v-model="sql"
-              type="textarea"
-              class="sql-viewer__sql-input"
-              :rows="10"
-              resize="none"
-              placeholder="在此编写 SQL，例如：SELECT * FROM dataset LIMIT 10;"
-            />
-
-            <div class="sql-viewer__sql-footer">
-              <div class="sql-viewer__sql-footer-left">
-                <el-button type="primary" @click="runSql">
-                  执行 SQL
-                </el-button>
-                <el-button @click="exportResult">
-                  导出至文件
-                </el-button>
-                <el-button @click="clearSql">
-                  清空
-                </el-button>
-              </div>
-              <span class="sql-viewer__sql-hint">
-                当前仅示意布局，后续可接入真实 SQL 执行接口
-              </span>
+          <div class="sql-viewer__sql-footer">
+            <div class="sql-viewer__sql-footer-left">
+              
             </div>
           </div>
+        </div>
 
-          <!-- 行详情展示区域：对应左侧表格中选中的记录 -->
-          <el-divider content-position="left">当前行详情</el-divider>
-          
-        </el-card>
-      </el-col>
-    </el-row>
-  </div>
+        <!-- 行详情展示区域：对应左侧表格中选中的记录 -->
+        <el-divider content-position="left">猜你想用</el-divider>
+        <div class="sql-viewer__sql-toolbar">
+          <div class="sql-query-actions">
+            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('limit')">
+              limit 查询
+            </el-button>
+            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('stat')">
+              统计 Token 数分布
+            </el-button>
+            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('tableInfo')">
+              查询 table 结构
+            </el-button>
+            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('catalog')">
+              查询 catalog 列表
+            </el-button>
+          </div>
+        </div>
+        <template #footer>
+          <el-button class="sql-query-btn"  type="primary" @click="runSql">
+            执行 SQL
+          </el-button>
+          <el-button class="sql-query-btn" type="success" @click="exportResult">
+            导出至文件
+          </el-button>
+          <el-button class="sql-query-btn" type="danger" @click="clearSql">
+            清空
+          </el-button>
+        </template>
+      </el-card>
+    </el-col>
+  </el-row>
 
   <el-dialog
     v-model="isDialogOpen"
@@ -357,10 +337,16 @@ const activeRow = ref(null)
 const sql = ref('select * from qianfan_bos_catalog.all_data.infoqa_v0 limit 10;')
 
 const templates = {
-  limit: 'select * from qianfan_bos_catalog.all_data.infoqa_v0 limit 10;',
-  stat: 'select bucket, count(*) as cnt from token_stats group by bucket order by bucket;',
-  tableInfo: 'describe table qianfan_bos_catalog.all_data.infoqa_v0;',
-  catalog: 'show tables from qianfan_bos_catalog;'
+  limit: 'SELECT * FROM qianfan_bos_catalog.all_data.infovqa_v1 LIMIT 10;',
+  stat: `SELECT 
+      CONCAT(FLOOR(conversations_tokens / 5) * 5, '-', FLOOR(conversations_tokens / 5) * 5 + 4) AS token_range,
+      COUNT(*) AS cnt
+    FROM qianfan_bos_catalog.all_data.infovqa_v1
+    GROUP BY FLOOR(conversations_tokens / 5)
+    ORDER BY FLOOR(conversations_tokens / 5)
+  `,
+  tableInfo: 'SHOW COLUMNS FROM qianfan_bos_catalog.all_data.infovqa_v1;',
+  catalog: 'SHOW DATABASES;'
 }
 
 const handleRowClick = (row) => {
@@ -376,7 +362,7 @@ const handlePageChange = (page) => {
   // 预留：此处可以根据 page 去请求新的分页数据
 }
 
-const applyTemplate = (key) => {
+const applySQLTemplate = (key) => {
   if (templates[key]) {
     sql.value = templates[key]
   }
@@ -450,22 +436,14 @@ const toggleCurrentRow = (idx) => {
 </script>
 
 <style scoped>
-.sql-viewer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  padding: 8px;
-  box-sizing: border-box;
-}
 
 .sql-viewer__meta-block {
   margin-bottom: 8px;
 }
 
 .sql-viewer__meta-title {
-  font-weight: 700;
   font-size: 16px;
+  color: var(--el-text-color-primary);
 }
 
 .sql-viewer__meta-sub {
@@ -523,36 +501,19 @@ const toggleCurrentRow = (idx) => {
   height: 12px;
 }
 
-.sql-viewer__body {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .sql-viewer__left,
 .sql-viewer__right {
-  height: 100%;
+  height: calc(100vh - 120px);
   display: flex;
-}
-
-.sql-viewer__card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .sql-viewer__table-wrapper {
-  flex: 1;
   min-height: 260px;
-  min-width: 0;
   overflow: auto;
 }
 
 .sql-viewer__pagination {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+  overflow: auto;
 }
 
 .image-thumb {
@@ -577,12 +538,6 @@ const toggleCurrentRow = (idx) => {
   height: 100%;
 }
 
-
-.sql-viewer__right-card {
-  padding-bottom: 8px;
-  overflow: hidden;
-}
-
 .sql-viewer__sql-panel {
   display: flex;
   flex-direction: column;
@@ -598,49 +553,30 @@ const toggleCurrentRow = (idx) => {
   gap: 8px;
 }
 
-.sql-viewer__sql-label {
-  font-weight: 600;
-  font-size: 13px;
+:deep(.sql-viewer-footer) {
+  height: 48px;
+  overflow: auto;
+  align-items: center;
+  padding: 6px 0 6px 20px;
 }
 
-.sql-viewer__sql-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-end;
+.sql-query-action {
+  margin: 4px;
+}
+
+:deep(.sql-query-footer) {
+  height: 48px;
+  overflow: auto;
+  padding: 2px 0 2px 20px;
+}
+
+.sql-query-btn {
+  margin: 4px;
 }
 
 .sql-viewer__sql-input {
   font-family: var(--el-font-family-monospace, SFMono-Regular, Menlo, Monaco,
       Consolas, 'Liberation Mono', 'Courier New', monospace);
-}
-
-.sql-viewer__sql-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.sql-viewer__sql-footer-left {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.sql-viewer__table-header {
-  padding: 8px 8px 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--el-card-bg-color, #fff);
-}
-
-.sql-viewer__sql-hint {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
 }
 
 .sql-viewer__detail {
@@ -702,24 +638,14 @@ const toggleCurrentRow = (idx) => {
   color: var(--el-text-color-secondary);
 }
 
-@media (max-width: 768px) {
-  .sql-viewer__card {
-    margin-bottom: 8px;
-  }
-
-  .sql-viewer__detail {
-    max-height: none;
-  }
-}
-
 .expand-cell {
   display: -webkit-box;
   line-clamp: 2; /* 兼容标准属性 */
   -webkit-line-clamp: 2; /* 限制显示行数 */
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5; /* 行高，可根据需求调整 */
-  max-height: 3em; /* 2行 * 1.5行高 = 3em */
+  line-height: 2; /* 行高，可根据需求调整 */
+  max-height: 4em; /* 2行 * 1.5行高 = 3em */
   transition: all 0.2s ease; /* 过渡动画，提升体验 */
   white-space: normal;
   word-break: break-word;
@@ -795,7 +721,7 @@ const toggleCurrentRow = (idx) => {
 .dialog-conversations {
   padding-top: 16px;
   white-space: pre-wrap;
-  background: #fff;
+  /* background: #fff; */
   /* border: 1px solid var(--el-border-color-lighter); */
   height: calc(100vh - 120px);
   overflow: auto;
