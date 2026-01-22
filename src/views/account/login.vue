@@ -33,7 +33,7 @@
       </div>
 
       <div class="tips tips-center">
-        <span>致力于打造大模型/数据的全链路平台!  ✌🏻(＾－＾)V</span>
+        <span>致力于建设垂类整合的模型&数据的服务平台!  ✌🏻(＾－＾)V</span>
       </div>
     </div>
   </div>
