@@ -14,7 +14,6 @@ title: 变更记录
 * v0.0.12 | feat(sqlStudio): 完善sqlStudio动态字段展示 | 2026-01-23 | 李梦杰
 * v0.0.11 | feat(sqlViewer): 切换正式后端服务联调并完善表格冷启动配置 | 2026-01-22 | 李梦杰
 * v0.0.10 | fix(sqlViewer): 更新 SQL Viewer 排版 | 2026-01-14 | 李梦杰
-* v0.0.10 | fix(sqlViewer): 更新 SQL Viewer 排版 | 2026-01-14 | 李梦杰
 * v0.0.9 | feat(SQLViewer): 基于 mock 数据实现 SQLViewer Layout | 2026-01-13 | 李梦杰
 * v0.0.8 | feat(SQL): 实现 SQL 导出页 | 2026-01-07 | 李梦杰
 * v0.0.7 | fix(auth): 兼容 http/https/localhost 不同环境下的 token 校验 | 2026-01-06 | 李梦杰
