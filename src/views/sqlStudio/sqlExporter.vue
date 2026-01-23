@@ -1,81 +1,83 @@
 <template>
   <div class="app-container">
-    <el-table :data="table.list" max-height="820" border stripe fit highlight-current-row v-loading="table.listLoading" :row-click="handleTableRowClick">
-      <el-table-column align="center" label="ID" width="60">
-        <template v-slot="scope">{{ scope.$index+1 }}</template>
-      </el-table-column>
-      <el-table-column align="center" class-name="status-col" label="Status" width="120">
+    <div class="table-wrapper">
+      <el-table :data="table.list" max-height="820" border stripe fit highlight-current-row v-loading="table.listLoading" :row-click="handleTableRowClick">
+        <el-table-column align="center" label="ID" width="60" fixed="left">
+          <template v-slot="scope">{{ scope.$index+1 }}</template>
+        </el-table-column>
+        <el-table-column align="center" class-name="status-col" label="Status" width="120" fixed="left">
+          <template v-slot="scope">
+            <el-tag :type="statusFilter(scope.row.status) || 'info'">{{ scope.row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <!-- <el-table-column label="SQL 详情" show-overflow-tooltip min-width="280">
+          <template v-slot="scope">{{ scope.row.parameters.sql }}</template>
+        </el-table-column> -->
+      <el-table-column
+        label="SQL 详情"
+        min-width="280"
+        class-name="expand-cell-col"
+      >
         <template v-slot="scope">
-          <el-tag :type="statusFilter(scope.row.status) || 'info'">{{ scope.row.status }}</el-tag>
+          <!-- 外层容器，绑定点击事件和动态样式 -->
+          <div
+            class="expand-cell"
+            @click="toggleExpand(scope.row)"
+            :class="{ 'expanded': scope.row.isExpanded }"
+            style="cursor: pointer;"
+          >
+            {{ scope.row.parameters.sql }}
+          </div>
         </template>
       </el-table-column>
-      <!-- <el-table-column label="SQL 详情" show-overflow-tooltip min-width="280">
-        <template v-slot="scope">{{ scope.row.parameters.sql }}</template>
-      </el-table-column> -->
-    <el-table-column 
-      label="SQL 详情" 
-      min-width="280"
-      class-name="expand-cell-col"
-    >
-      <template v-slot="scope">
-        <!-- 外层容器，绑定点击事件和动态样式 -->
-        <div 
-          class="expand-cell"
-          @click="toggleExpand(scope.row)"
-          :class="{ 'expanded': scope.row.isExpanded }"
-          style="cursor: pointer;"
-        >
-          {{ scope.row.parameters.sql }}
-        </div>
-      </template>
-    </el-table-column>
-      <el-table-column label="导出至" min-width="280">
-        <template v-slot="scope">
-          <el-row align="middle">
-            <el-col :span="22">
-              <div 
-                class="expand-cell"
-                @click="toggleExpand(scope.row)"
-                :class="{ 'expanded': scope.row.isExpanded }"
-                style="cursor: pointer;"
-              >
-                {{ scope.row.parameters.output }}
-              </div>
-            </el-col>
-            <el-col :span="2">
-              <el-button text @click.prevent="handleOutputCopy(scope.row.parameters.output)">
-                <el-icon ><CopyDocument /></el-icon>
-              </el-button>
-            </el-col>
-          </el-row>
-        </template>
-      </el-table-column>
-      <el-table-column label="用户" prop="user" show-overflow-tooltip min-width="120" />
-      <el-table-column min-width="120">
-        <template #header>
-          <span><el-icon><timer /></el-icon> 时间线</span>
-        </template>
-          <el-table-column label="创建" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.created_at)}}</template></el-table-column>
-          <el-table-column label="开始" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.started_at) }}</template></el-table-column>
-          <el-table-column label="结束" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.finished_at) }}</template></el-table-column>
-      </el-table-column>
-      <el-table-column fixed="right" label="操作" min-width="80">
-        <template #default="scope">
-          <el-popconfirm v-if="!isDisabledDelete(scope.row)"  :title="getPauseTitle(scope.$index+1, scope.row)" @confirm.prevent="pauseRow(scope.$index, scope.row)" placement="left" width="300">
-            <template #reference>
-              <el-button
-                link
-                icon="Delete"
-                type="danger"
-                size="small"
-              >
-                暂停
-              </el-button>
-            </template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table-column label="导出至" min-width="280">
+          <template v-slot="scope">
+            <el-row align="middle">
+              <el-col :span="22">
+                <div
+                  class="expand-cell"
+                  @click="toggleExpand(scope.row)"
+                  :class="{ 'expanded': scope.row.isExpanded }"
+                  style="cursor: pointer;"
+                >
+                  {{ scope.row.parameters.output }}
+                </div>
+              </el-col>
+              <el-col :span="2">
+                <el-button text @click.prevent="handleOutputCopy(scope.row.parameters.output)">
+                  <el-icon ><CopyDocument /></el-icon>
+                </el-button>
+              </el-col>
+            </el-row>
+          </template>
+        </el-table-column>
+        <el-table-column label="用户" prop="user" show-overflow-tooltip min-width="120" />
+        <el-table-column min-width="120">
+          <template #header>
+            <span><el-icon><timer /></el-icon> 时间线</span>
+          </template>
+            <el-table-column label="创建" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.created_at)}}</template></el-table-column>
+            <el-table-column label="开始" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.started_at) }}</template></el-table-column>
+            <el-table-column label="结束" min-width="100"><template v-slot="scope">{{ formattedCNTime(scope.row.finished_at) }}</template></el-table-column>
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" min-width="80">
+          <template #default="scope">
+            <el-popconfirm v-if="!isDisabledDelete(scope.row)"  :title="getPauseTitle(scope.$index+1, scope.row)" @confirm.prevent="pauseRow(scope.$index, scope.row)" placement="left" width="300">
+              <template #reference>
+                <el-button
+                  link
+                  icon="Delete"
+                  type="danger"
+                  size="small"
+                >
+                  暂停
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </div>
 </template>
 
@@ -85,7 +87,7 @@ import { onMounted, reactive } from 'vue'
 import { getProcessSchedulerList, stopProcessScheduler } from '@/api/processScheduler/index'
 
 const formattedCNTime = inject('$formattedCNTime')
- 
+
 const isDisabledDelete = (row) => {
   // 用 Set 存储禁用状态，扩展更方便（后续加状态只需改 Set）
   const disabledStatus = new Set(['SUCCESSED', 'FAILED', 'STOPPED']);
@@ -117,7 +119,7 @@ const fetchData = () => {
     getProcessSchedulerList({
       queue: "kubespark"
     }).then((response) => {
-        table.list = response.data
+        table.list = response.data.result
         table.listLoading = false
     })
 }
@@ -125,7 +127,7 @@ const fetchData = () => {
 const handleOutputCopy = async (outputPath) => {
   try {
     // 1. 统一格式化复制文本（对象转格式化JSON，其他转字符串）
-    const copyText = typeof outputPath === 'object' 
+    const copyText = typeof outputPath === 'object'
       ? JSON.stringify(outputPath, null, 2)
       : String(outputPath);
 
@@ -165,7 +167,7 @@ const handleOutputCopy = async (outputPath) => {
 };
 
 const handleTableRowClick = () => {
-  
+
 }
 
 const getPauseTitle = (scopeIdx, row) => {
@@ -194,6 +196,11 @@ const toggleExpand = (row) => {
 </script>
 
 <style scoped>
+
+.table-wrapper {
+  height: calc(90vh - 80px);
+}
+
 .expand-cell {
   display: -webkit-box;
   line-clamp: 2; /* 兼容标准属性 */
@@ -221,4 +228,5 @@ const toggleExpand = (row) => {
   overflow: visible;
   text-overflow: initial;
 }
+
 </style>

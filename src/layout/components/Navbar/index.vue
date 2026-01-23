@@ -4,8 +4,8 @@
     <hamburger class="hamburger-container" v-if="ctx.device!=='mobile'" :is-active="ctx.sidebar.opened" @toggleClick="toggleSidebar" />
     <breadcrumb class="breadcrumb-container" v-if="ctx.device!=='mobile'" />
     <div class="right-menu">
-      
-      <el-tooltip content="Under development" effect="dark" placement="bottom" v-if="ctx.device!=='mobile'">
+
+      <el-tooltip content="Under development~" effect="dark" placement="bottom" v-if="ctx.device!=='mobile'">
         <div class="icon-button hover-effect">
           <el-icon>
             <i-ep-Search />
@@ -26,7 +26,7 @@
       <div class="icon-button hover-effect" @click="drawerMenu = true" v-if="ctx.device==='mobile'">
         <svg-icon icon="menu" />
       </div>
-      
+
       <UserCenter size="32px" />
     </div>
   </div>
@@ -69,7 +69,7 @@
     <el-drawer v-model="drawerMessage" title="I am the title" :with-header="true" size="min(400px, max(30%, 240px))">
       <!-- 历史记录、文档类 -->
       <div style="color:#666;">
-        Under development
+        Under development!
       </div>
     </el-drawer>
   </Teleport>
@@ -139,7 +139,7 @@ const toggleTheme = () => {
     line-height: 50px;
     margin-right: 15px;
     margin-left: auto;
-    
+
     &:focus {
       outline: none;
     }
@@ -154,7 +154,7 @@ const toggleTheme = () => {
     display: flex;
     align-items: center;
     .icon-button{
-      
+
     }
   }
 }

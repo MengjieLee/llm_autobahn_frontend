@@ -93,7 +93,7 @@ service.interceptors.response.use(
 
 // Process Scheduler 专用的请求实例
 const processSchedulerService = axios.create({
-  baseURL: import.meta.env.VITE_PROCESS_SCHEDULER_HOST,
+  baseURL: import.meta.env.VITE_SQL_WRAPPER_HOST,
   timeout: 5000
 })
 
@@ -119,7 +119,7 @@ processSchedulerService.interceptors.response.use(
     // console.log('processSchedulerService response.data:', res)
 
     // if the custom err_code is not 20000, it is judged as an error.
-    if (res.err_code !== 0) {
+    if (res.code !== 0) {
       ElMessage({
         message: res.err_msg || res.message || 'Error',
         type: 'error',
@@ -127,7 +127,7 @@ processSchedulerService.interceptors.response.use(
       })
 
       // 50008: Illegal token; 50012: Other clients logged in; 50014: Token expired;
-      if (res.err_code === 50008 || res.err_code === 50012 || res.err_code === 50014) {
+      if (res.code === 50008 || res.err_code === 50012 || res.err_code === 50014) {
         // to re-login
         ElMessageBox.confirm(
           'You have been logged out, you can cancel to stay on this page, or log in again',
