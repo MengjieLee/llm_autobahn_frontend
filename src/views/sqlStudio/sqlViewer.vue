@@ -44,8 +44,8 @@
                   <el-col :xs="16" :sm="16" :md="16" :lg="18">
                     <div v-if="scope.row.medium && scope.row.medium.length" class="expand-cell"
                       :class="{ 'expanded': scope.row.isExpanded }">
-                      <!-- 循环渲染最多 3 个媒体文件 -->
-                      <template v-for="(media, idx) in (scope.row.isExpanded ? scope.row.medium : scope.row.medium.slice(0, 3))" :key="idx">
+                      <!-- 循环渲染最多 2 个媒体文件 -->
+                      <template v-for="(media, idx) in (scope.row.isExpanded ? scope.row.medium : scope.row.medium.slice(0, 2))" :key="idx">
                         <!-- 图片展示 -->
                         <el-image
                           v-if="scope.row.mediaType === 'image'"
@@ -90,10 +90,10 @@
                   </el-col>
                   <el-col :xs="8" :sm="8" :md="8" :lg="6">
                     <!-- 显示剩余额外媒体展开按钮 -->
-                    <div v-if="scope.row.medium.length > 3 && !scope.row.isExpanded" class="medium-more-trigger" @click="toggleExpand(scope.row)" style="cursor: pointer;">
+                    <div v-if="scope.row.medium.length > 2 && !scope.row.isExpanded" class="medium-more-trigger" @click="toggleExpand(scope.row)" style="cursor: pointer;">
                       展开<el-icon><View /></el-icon>
                     </div>
-                    <div v-else-if="scope.row.medium.length > 3" @click="toggleExpand(scope.row)" style="cursor: pointer;">
+                    <div v-else-if="scope.row.medium.length > 2" @click="toggleExpand(scope.row)" style="cursor: pointer;">
                       收起<el-icon><Hide /></el-icon>
                     </div>
                   </el-col>
@@ -379,7 +379,7 @@
             <div v-for="column in dynamicColumns" :key="column" class="detail-section">
               <div class="detail-label">{{ formatColumnLabel(column) }}</div>
               <div class="detail-content detail-content--scroll">
-                {{ currentRow[column] }}
+                {{ currentRow[column] || "NULL" }}
               </div>
             </div>
 
@@ -855,7 +855,7 @@ onMounted(() => {
 }
 
 .detail-label {
-  font-weight: 500;
+  font-weight: bold;
   font-size: 13px;
   margin-bottom: 4px;
   cursor: pointer;
@@ -871,6 +871,12 @@ onMounted(() => {
 
 .detail-content {
   font-size: 13px;
+  border: solid 1px;
+  box-shadow: 0 2px 8px var(--el-text-color-secondary);
+  &:hover {
+    box-shadow: 0 6px 12px var(--el-color-primary);
+    transition: all 0.2s ease;
+  }
 }
 
 .detail-content--scroll {

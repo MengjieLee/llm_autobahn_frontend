@@ -3,14 +3,14 @@ title: 变更记录
 ---
 
 
-### 暂未实现并且计划实现的功能
-
-* ...
-* 🚧 SQL Studio | 👷🏻‍♂️ 李梦杰
-* Huggingface Dataviewer 组件
-* 数据集纳管治理
+### 施工计划
+* ✅ SQL Studio | 👷🏻‍♂️ 李梦杰
+* ✅ Huggingface Dataviewer 组件 | 👷🏻‍♂️ 李梦杰
+* 🚧 数据集纳管治理 | 👷🏻‍♂️ 李梦杰
+* 数据 pipeline | TBD
 
 ### 更新记录
+* v0.0.13 | feat(layout): 移除冗余框架组件并精简 SQL detail content 样式 | 2026-01-26 | 李梦杰
 * v0.0.12 | feat(sqlStudio): 完善sqlStudio动态字段展示 | 2026-01-23 | 李梦杰
 * v0.0.11 | feat(sqlViewer): 切换正式后端服务联调并完善表格冷启动配置 | 2026-01-22 | 李梦杰
 * v0.0.10 | fix(sqlViewer): 更新 SQL Viewer 排版 | 2026-01-14 | 李梦杰
