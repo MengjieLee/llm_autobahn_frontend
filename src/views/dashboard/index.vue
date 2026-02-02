@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-container">
-    <PanelGroup @directToDomain="directToDomain" />
+    <PanelGroup @directToDomain="directToDomain" :domainMatrix="domainMatrix" />
   </div>
 
 </template>
@@ -8,8 +8,14 @@
 <script setup>
 import PanelGroup from '@/views/dashboard/components/PanelGroup.vue'
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 
 const router = useRouter()
+const domainMatrix = ref({
+  datasetsAmount: 0,
+  pipelineAmount: 0,
+  peopleAmount: 0,
+})
 
 const directToDomain = (domain) => {
   const routeMap = {

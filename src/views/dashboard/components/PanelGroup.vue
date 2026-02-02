@@ -2,53 +2,54 @@
   <el-row :gutter="40" class="panel-group">
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
       <div class="card-panel" @click="directToDomain('dataset')">
-        <div class="card-panel-icon-wrapper icon-people">
-          <svg-icon icon-class="people" class-name="card-panel-icon" />
+        <div class="card-panel-icon-wrapper icon-datasets">
+          <svg-icon icon="datasets" class-name="card-panel-icon" />
         </div>
         <div class="card-panel-description">
           <div class="card-panel-text">
-            数据集
+            数据集 <el-icon><Promotion /></el-icon>
           </div>
-          <count-to :start-val="0" :end-val="102400" :duration="2600" class="card-panel-num" />
+          <CountTo :start-val="0" :end-val="domainMatrix.datasetsAmount" :duration="2600" class="card-panel-num" />
         </div>
       </div>
     </el-col>
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
       <div class="card-panel" @click="directToDomain('pipeline')">
-        <div class="card-panel-icon-wrapper icon-money">
-          <svg-icon icon-class="money" class-name="card-panel-icon" />
+        <div class="card-panel-icon-wrapper icon-pipelines">
+          <svg-icon icon="pipeline" class-name="card-panel-icon" />
         </div>
         <div class="card-panel-description">
           <div class="card-panel-text">
-            Pipelines
+            数据 Pipeline <el-icon><Promotion /></el-icon>
           </div>
-          <count-to :start-val="0" :end-val="9280" :duration="3200" class="card-panel-num" />
+          <CountTo :start-val="0" :end-val="domainMatrix.pipelineAmount" :duration="3200" class="card-panel-num" />
         </div>
       </div>
     </el-col>
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-      <div class="card-panel" @click="directToDomain('user')">
-        <div class="card-panel-icon-wrapper icon-message">
-          <svg-icon icon-class="message" class-name="card-panel-icon" />
+      <!-- <div class="card-panel" @click="directToDomain('user')"> -->
+      <div class="card-panel">
+        <div class="card-panel-icon-wrapper icon-people">
+          <svg-icon icon="people" class-name="card-panel-icon" />
         </div>
         <div class="card-panel-description">
           <div class="card-panel-text">
             注册用户
           </div>
-          <count-to :start-val="0" :end-val="81212" :duration="3000" class="card-panel-num" />
+          <CountTo :start-val="0" :end-val="domainMatrix.peopleAmount" :duration="3000" class="card-panel-num" />
         </div>
       </div>
     </el-col>
     <!-- <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-      <div class="card-panel" @click="directToDomain('shoppings')">
-        <div class="card-panel-icon-wrapper icon-shopping">
-          <svg-icon icon-class="shopping" class-name="card-panel-icon" />
+      <div class="card-panel" @click="directToDomain('model')">
+        <div class="card-panel-icon-wrapper icon-model">
+          <svg-icon icon="model" class-name="card-panel-icon" />
         </div>
         <div class="card-panel-description">
           <div class="card-panel-text">
             模型
           </div>
-          <count-to :start-val="0" :end-val="13600" :duration="3600" class="card-panel-num" />
+          <CountTo :start-val="0" :end-val="13600" :duration="3600" class="card-panel-num" />
         </div>
       </div>
     </el-col> -->
@@ -56,11 +57,30 @@
 </template>
 
 <script>
-import CountTo from 'vue3-count-to'
+import { CountTo } from 'vue3-count-to'
 
 export default {
   components: {
     CountTo
+  },
+  props: {
+    domainMatrix: {
+      datasetsAmount: {
+        type: Number,
+        default: 0
+      },
+      pipelineAmount: {
+        type: Number,
+        default: 0
+      },
+      peopleAmount: {
+        type: Number,
+        default: 0
+      }
+    }
+  },
+  data() {
+    return {}
   },
   methods: {
     directToDomain(domain) {
@@ -94,36 +114,36 @@ export default {
         color: #fff;
       }
 
-      .icon-people {
+      .icon-datasets {
         background: #40c9c6;
       }
 
-      .icon-message {
+      .icon-people {
         background: #36a3f7;
       }
 
-      .icon-money {
+      .icon-pipelines {
         background: #f4516c;
       }
 
-      .icon-shopping {
+      .icon-model {
         background: #34bfa3
       }
     }
 
-    .icon-people {
+    .icon-datasets {
       color: #40c9c6;
     }
 
-    .icon-message {
+    .icon-people {
       color: #36a3f7;
     }
 
-    .icon-money {
+    .icon-pipelines {
       color: #f4516c;
     }
 
-    .icon-shopping {
+    .icon-model {
       color: #34bfa3
     }
 

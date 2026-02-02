@@ -3,7 +3,7 @@ import Layout from '@/layout/index.vue'
 const datasets = {
   path: '/datasets',
   component: Layout,
-  redirect: '/datasets',
+  redirect: '/datasets/catalog',
   name: 'datasets',
   meta: {
     title: '数据集',
@@ -11,7 +11,7 @@ const datasets = {
   },
   children: [
     {
-      path: '',
+      path: 'catalog',
       component: () => import('@/views/datasets/datasetsCatalog.vue'),
       name: 'Catalog',
       meta: {
