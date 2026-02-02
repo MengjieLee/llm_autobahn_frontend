@@ -4,7 +4,7 @@ import {
   // createWebHashHistory
 } from 'vue-router'
 
-import nestedRouter from './modules/nested'
+import datasets from './modules/datasets'
 import sqlStudio from './modules/sqlStudio'
 
 import Layout from '@/layout/index.vue'
@@ -29,15 +29,16 @@ const router = createRouter({
       children: [{
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('@/views/dashboard.vue'),
+        component: () => import('@/views/dashboard/index.vue'),
         meta: {
-          title: 'Dashboard',
+          title: '首页',
           icon: 'home',
           keepAlive: true,
           affix: true
         }
       }, ]
     },
+    datasets,
     sqlStudio,
     {
       path: '/about',
@@ -68,7 +69,7 @@ const router = createRouter({
     },
     {
       path: '/404',
-      component: () => import('@/views/404.vue'),
+      component: () => import('@/views/error-page/404.vue'),
       hidden: true
     },
     {

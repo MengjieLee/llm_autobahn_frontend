@@ -16,9 +16,9 @@ dayjs.locale('zh-cn') // 全局默认语言为中文（无需每个组件单独�
 // ======================== dayjs 优化配置 END ========================
 
 // import 'element-plus/theme-chalk/dark/css-vars.css' // dark theme
-// dark theme 动态的dark模式样式文件 // theme/index.scss 也将起效 
+// dark theme 动态的dark模式样式文件 // theme/index.scss 也将起效
 // 参见 https://juejin.cn/post/7442573821444390949
-import 'element-plus/theme-chalk/src/dark/css-vars.scss' 
+import 'element-plus/theme-chalk/src/dark/css-vars.scss'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import { createApp } from 'vue'

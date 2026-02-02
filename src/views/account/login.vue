@@ -12,7 +12,7 @@
 
         <div class="auth-arrow">
           <span class="auth-arrow-text">授 权</span>
-          <span class="auth-arrow-icon"><- -></span>
+          <span class="auth-arrow-icon">-- ✅ --</span>
         </div>
 
         <div class="auth-circle">
@@ -289,7 +289,7 @@ $light_gray: #f5f7fa;
 .auth-button {
 	width: 100%;
 	// background-color: transparent !important;
-	
+
 	border: none !important;
 	color: #fff !important;
 	border-radius: 0;
