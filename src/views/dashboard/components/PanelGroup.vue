@@ -1,7 +1,7 @@
 <template>
   <el-row :gutter="40" class="panel-group">
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-      <div class="card-panel" @click="directToDomain('dataset')">
+      <div v-loading="loading" class="card-panel" @click="directToDomain('dataset')">
         <div class="card-panel-icon-wrapper icon-datasets">
           <svg-icon icon="datasets" class-name="card-panel-icon" />
         </div>
@@ -14,7 +14,7 @@
       </div>
     </el-col>
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-      <div class="card-panel" @click="directToDomain('pipeline')">
+      <div v-loading="loading" class="card-panel" @click="directToDomain('pipeline')">
         <div class="card-panel-icon-wrapper icon-pipelines">
           <svg-icon icon="pipeline" class-name="card-panel-icon" />
         </div>
@@ -28,7 +28,7 @@
     </el-col>
     <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
       <!-- <div class="card-panel" @click="directToDomain('user')"> -->
-      <div class="card-panel">
+      <div v-loading="loading" class="card-panel">
         <div class="card-panel-icon-wrapper icon-people">
           <svg-icon icon="people" class-name="card-panel-icon" />
         </div>
@@ -36,7 +36,7 @@
           <div class="card-panel-text">
             注册用户
           </div>
-          <CountTo :start-val="0" :end-val="domainMatrix.peopleAmount" :duration="3000" class="card-panel-num" />
+          <CountTo :start-val="0" :end-val="domainMatrix.usersAmount" :duration="3000" class="card-panel-num" />
         </div>
       </div>
     </el-col>
@@ -64,6 +64,10 @@ export default {
     CountTo
   },
   props: {
+    loading: {
+      type: Boolean,
+      default: false,
+    },
     domainMatrix: {
       datasetsAmount: {
         type: Number,
@@ -73,7 +77,7 @@ export default {
         type: Number,
         default: 0
       },
-      peopleAmount: {
+      usersAmount: {
         type: Number,
         default: 0
       }
@@ -106,10 +110,11 @@ export default {
     overflow: hidden;
     color: #666;
     background: #fff;
-    box-shadow: 4px 4px 40px rgba(0, 0, 0, .05);
+    box-shadow: 4px 4px 40px rgba(0, 0, 0, .15);
     border-color: rgba(0, 0, 0, .05);
 
     &:hover {
+
       .card-panel-icon-wrapper {
         color: #fff;
       }
@@ -129,6 +134,8 @@ export default {
       .icon-model {
         background: #34bfa3
       }
+      box-shadow: 8px 8px 20px var(--el-text-color-secondary);
+      border: 2px solid #44ba8299;
     }
 
     .icon-datasets {

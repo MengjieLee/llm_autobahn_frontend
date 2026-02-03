@@ -1,7 +1,8 @@
-import { datasetMetadataService } from '@/utils/request'
+import { autobahnBackendService } from '@/utils/request'
 
+// TODO
 export function getDatasetMetadataList(params) {
-  return datasetMetadataService({
+  return autobahnBackendService({
     url: '/datasets/list',
     method: 'get',
     params

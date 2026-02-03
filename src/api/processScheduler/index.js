@@ -1,7 +1,7 @@
-import { processSchedulerService } from '@/utils/request'
+import { autobahnBackendService } from '@/utils/request'
 
 export function getProcessSchedulerList(params) {
-  return processSchedulerService({
+  return autobahnBackendService({
     url: '/api/v1/process_scheduler/jobs',
     method: 'get',
     params
@@ -9,7 +9,7 @@ export function getProcessSchedulerList(params) {
 }
 
 export function startProcessScheduler(data) {
-  return processSchedulerService({
+  return autobahnBackendService({
     url: `/api/v1/process_scheduler/jobs/`,
     method: 'post',
     data
@@ -17,7 +17,7 @@ export function startProcessScheduler(data) {
 }
 
 export function stopProcessScheduler(jobID) {
-  return processSchedulerService({
+  return autobahnBackendService({
     url: `/api/v1/process_scheduler/jobs/${jobID}/stop`,
     method: 'post',
   })

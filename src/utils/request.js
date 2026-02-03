@@ -91,74 +91,10 @@ service.interceptors.response.use(
   }
 )
 
-// Process Scheduler 专用的请求实例
-const processSchedulerService = axios.create({
-  baseURL: import.meta.env.VITE_SQL_WRAPPER_HOST,
-  timeout: 5000
-})
-
-// Process Scheduler 请求拦截器
-processSchedulerService.interceptors.request.use(
-  config => {
-    const token = dispatch.user.getToken()
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
-    }
-    return config
-  },
-  error => {
-    console.log(error)
-    return Promise.reject(error)
-  }
-)
-
-// Process Scheduler 响应拦截器
-processSchedulerService.interceptors.response.use(
-  response => {
-    const res = response.data
-    // console.log('processSchedulerService response.data:', res)
-
-    // if the custom err_code is not 20000, it is judged as an error.
-    if (res.code !== 0) {
-      ElMessage({
-        message: res.err_msg || res.message || 'Error',
-        type: 'error',
-        duration: 5 * 1000
-      })
-
-      // 50008: Illegal token; 50012: Other clients logged in; 50014: Token expired;
-      if (res.code === 50008 || res.err_code === 50012 || res.err_code === 50014) {
-        // to re-login
-        ElMessageBox.confirm(
-          'You have been logged out, you can cancel to stay on this page, or log in again',
-          'Confirm logout', {
-            confirmButtonText: 'Re-Login',
-            cancelButtonText: 'Cancel',
-            type: 'warning'
-          }).then(() => {
-          dispatch.user.removeToken()
-          location.reload()
-        })
-      }
-      return Promise.reject(new Error(res.message || 'Error'))
-    } else {
-      return res
-    }
-  },
-  error => {
-    console.log('err ' + error) // for debug
-    ElMessage({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
-    return Promise.reject(error)
-  }
-)
 
 // SQLWrapper 专用的请求实例
 const SQLWrapperService = axios.create({
-  baseURL: import.meta.env.VITE_SQL_WRAPPER_HOST,
+  baseURL: import.meta.env.VITE_AUTOBAHN_BACKEND_HOST,
   timeout: 600000
 })
 
@@ -187,7 +123,7 @@ SQLWrapperService.interceptors.response.use(
     // if the custom err_code is not 20000, it is judged as an error.
     if (response.status !== 200) {
       ElMessage({
-        message: res.message || res.msg || 'datasetMetadata Response Error',
+        message: res.message || res.msg || 'SQLWrapperService Response Error',
         type: 'error',
         duration: 5 * 1000
       })
@@ -206,7 +142,7 @@ SQLWrapperService.interceptors.response.use(
           location.reload()
         })
       }
-      return Promise.reject(new Error(res.message || 'datasetMetadata Response Error'))
+      return Promise.reject(new Error(res.message || 'SQLWrapperService Response Error'))
     } else {
       return res
     }
@@ -222,19 +158,19 @@ SQLWrapperService.interceptors.response.use(
   }
 )
 
-// datasetMetadata 专用的请求实例
-const datasetMetadataService = axios.create({
-  baseURL: import.meta.env.VITE_META_DATA_HOST,
-  timeout: 5000
+// autobahnBackend 专用的请求实例
+const autobahnBackendService = axios.create({
+  baseURL: import.meta.env.VITE_AUTOBAHN_BACKEND_HOST,
+  timeout: 60000
 })
 
-// datasetMetadata 请求拦截器
-datasetMetadataService.interceptors.request.use(
+// autobahnBackend 请求拦截器
+autobahnBackendService.interceptors.request.use(
   config => {
-    // const token = dispatch.user.getToken()
-    // if (token) {
-    //   config.headers['Authorization'] = `Bearer ${token}`
-    // }
+    const token = dispatch.user.getToken()
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
     return config
   },
   error => {
@@ -243,8 +179,8 @@ datasetMetadataService.interceptors.request.use(
   }
 )
 
-// datasetMetadata 响应拦截器
-datasetMetadataService.interceptors.response.use(
+// autobahnBackend 响应拦截器
+autobahnBackendService.interceptors.response.use(
   response => {
     // console.log(response)
     const res = response.data
@@ -252,7 +188,7 @@ datasetMetadataService.interceptors.response.use(
     // if the custom err_code is not 20000, it is judged as an error.
     if (response.status !== 200) {
       ElMessage({
-        message: res.message || res.msg || 'datasetMetadata Response Error',
+        message: res.message || res.msg || 'autobahnBackend Response Error',
         type: 'error',
         duration: 5 * 1000
       })
@@ -271,7 +207,7 @@ datasetMetadataService.interceptors.response.use(
           location.reload()
         })
       }
-      return Promise.reject(new Error(res.message || 'datasetMetadata Response Error'))
+      return Promise.reject(new Error(res.message || 'autobahnBackend Response Error'))
     } else {
       return res
     }
@@ -288,4 +224,4 @@ datasetMetadataService.interceptors.response.use(
 )
 
 export default service
-export { processSchedulerService, datasetMetadataService, SQLWrapperService }
+export { autobahnBackendService, SQLWrapperService }
