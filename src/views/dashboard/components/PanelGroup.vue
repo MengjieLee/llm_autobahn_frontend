@@ -110,8 +110,10 @@ export default {
     overflow: hidden;
     color: #666;
     background: #fff;
-    box-shadow: 4px 4px 40px rgba(0, 0, 0, .15);
     border-color: rgba(0, 0, 0, .05);
+    border-radius: 4px;
+    transition: all 0.5s ease;
+    box-shadow: 0 8px 14px 4px var(--el-border-color) !important;
 
     &:hover {
 
@@ -134,8 +136,7 @@ export default {
       .icon-model {
         background: #34bfa3
       }
-      box-shadow: 8px 8px 20px var(--el-text-color-secondary);
-      border: 2px solid #44ba8299;
+      box-shadow: 5px 5px 18px 2px var(--el-color-primary) !important;
     }
 
     .icon-datasets {

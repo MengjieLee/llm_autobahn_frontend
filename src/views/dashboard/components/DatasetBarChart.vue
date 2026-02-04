@@ -7,12 +7,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, shallowRef } from 'vue';
+import { useRouter } from 'vue-router'
 import * as echarts from 'echarts';
-// @ts-ignore
+import useChartResize from './mixins/resize'
 import 'echarts/theme/macarons';
 
+const router = useRouter()
+
 const props = defineProps({
+  autoResize: {type: Boolean, default: true},
   className: { type: String, default: 'bar-chart' },
   width: { type: String, default: '100%' },
   height: { type: String, default: '400px' },
@@ -22,31 +26,34 @@ const props = defineProps({
     required: true,
     default: () => []
   },
-  title: { type: String, default: '数据集分布统计' }
+  title: { type: String, default: '数据集分布统计a' }
 });
 
 const chartRef = ref(null);
-let chartInstance = null;
+const chartInstance = shallowRef(null);
+
+useChartResize(chartInstance);
 
 const initChart = () => {
   if (!chartRef.value) return;
-  chartInstance = echarts.init(chartRef.value, 'macarons');
-  chartInstance.on('click', (params) => {
-    // params 包含了点击柱状体的所有信息
-    // params.name 是 X 轴的 label 名称
-    // params.value 是对应的数值
-    console.log('点击了：', params.name);
 
-    // 调用跳转函数
+  // 如果已经存在实例，先销毁（防止重复初始化）
+  if (chartInstance.value) {
+    chartInstance.value.dispose();
+  }
+
+  chartInstance.value = echarts.init(chartRef.value, 'macarons');
+
+  chartInstance.value.on('click', (params) => {
     handleRouteJump(params.name);
   });
+
   setOptions(props.datasetsBarChartData);
 };
 
-const handleRouteJump = (labelName) => {
+const handleRouteJump = (modalityValue) => {
   // 示例：根据 label 跳转到不同路由，并携带参数
-  // router.push({ path: '/dataset/detail', query: { type: labelName } });
-  alert(`即将跳转到 ${labelName} 的详情页`);
+  router.push({ path: '/datasets/catalog', query: { modality: modalityValue } });
 };
 
 const setOptions = (data) => {
@@ -55,7 +62,7 @@ const setOptions = (data) => {
   const xAxisData = sortedData.map(item => item.name);
   const seriesData = sortedData.map(item => item.value);
 
-  chartInstance.setOption({
+  chartInstance.value.setOption({
     title: {
       text: props.title,
       left: 'center',
@@ -123,24 +130,22 @@ const setOptions = (data) => {
         animationDuration: 1500
       }
     ]
-  });
+  }, { notMerge: true});
 };
 
 watch(() => props.datasetsBarChartData, (newData) => {
   setOptions(newData);
 }, { deep: true });
 
-const handleResize = () => chartInstance?.resize();
-
 onMounted(() => {
   initChart();
-  window.addEventListener('resize', handleResize);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
-  chartInstance?.dispose();
-  chartInstance = null;
+  if (chartInstance.value) {
+    chartInstance.value.dispose();
+    chartInstance.value = null;
+  }
 });
 </script>
 
@@ -150,9 +155,12 @@ onBeforeUnmount(() => {
   box-shadow: 4px 4px 40px rgba(0, 0, 0, .15);
   border-color: rgba(0, 0, 0, .05);
 
+  border-radius: 4px;
+  transition: all 0.5s ease;
+  box-shadow: 0 8px 14px 4px var(--el-border-color) !important;
+
   &:hover {
-    box-shadow: 8px 8px 20px var(--el-text-color-secondary);
-    border: 2px solid #44ba8299;
+    box-shadow: 5px 5px 18px 2px var(--el-color-primary) !important;
   }
 }
 </style>

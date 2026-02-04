@@ -51,38 +51,46 @@
     </el-col>
     <el-col :xs="14" :sm="16" :lg="18" class="catelog-content-wrapper">
       <!-- 搜索头 -->
-      <el-row justify="space-between">
-        <el-col :span="12">
-          <div class="content-search-container">
-            <span class="content-search-label">数据集</span>
-            <CountTo class="content-search-count" :start-val="0" :end-val="datasetsList.length" :duration="2500" />
-            <el-input class="content-search-input" v-model="filterGroup.name" @input="fetchData" placeholder="按关键字搜索 🔍" clearable ></el-input>
-          </div>
-        </el-col>
-      </el-row>
-      <!-- 搜索内容 -->
+      <el-affix class="affix-container" :offset="100">
+        <el-row justify="space-between">
+          <el-col :span="12">
+            <div class="content-search-container">
+              <span class="content-search-label">数据集</span>
+              <CountTo class="content-search-count" :start-val="0" :end-val="datasetsList.length" :duration="2500" />
+              <el-input class="content-search-input" v-model="filterGroup.name" @input="fetchData" placeholder="按关键字搜索 🔍" clearable ></el-input>
+            </div>
+          </el-col>
+        </el-row>
+      </el-affix>
+      <!-- 数据集列表 -->
       <el-row v-loading="catelogContentLoading" element-loading-text="🏃 努力加载中..." justify="space-between" class="catelog-content-container">
-        <el-col :span="11" v-for="dataset in datasetsList">
-          <el-card shadow="hover" footer-class="dataset-card-footer">
-            <template #header>{{ dataset.name }}</template>
-
-            <div><span>Size: </span>{{ dataset.size }}</div>
-
-
+        <el-col :xs="24" :sm="24" :md="24" :lg="11" v-for="dataset in datasetsList">
+          <el-card shadow="hover" @click="handleDatasetCardClicked(dataset.name)" class="dataset-card" body-class="dataset-card-body" footer-class="dataset-card-footer">
+            <template #default>
+              <el-row justify="space-between">
+                <el-col :span="11">
+                  <span class="dataset-name-multiline" :title="dataset.name">{{ dataset.name }}</span>
+                </el-col>
+                <el-col :span="11" style="display: flex; justify-content: flex-end;">
+                  <span class="dataset-tag"><el-icon style="margin-right: 4px;"><User /></el-icon>{{ dataset.registrant }}</span>
+                  <span class="dataset-tag"><el-icon style="margin-right: 4px;"><Clock /></el-icon>{{ formatDate('yyyy-MM-dd hh:mm:ss', dataset.updated_at) }}</span>
+                </el-col>
+              </el-row>
+            </template>
             <template #footer>
-              <span class="dataset-footer-author"><el-icon style="margin-right: 4px;"><User /></el-icon>{{ dataset.registrant }}</span>
-              <el-divider direction="vertical"></el-divider>
               <div v-for="(group,idx) in dataset.labels" :key="group.label_name" style="display: inline">
                 <el-check-tag
-                  class="dataset-footer-tag"
+                  class="dataset-labels-tag"
                   :checked="isLabelChecked(group.label_name, val)"
                   v-for="val in group.label_values"
                   :key="val"
                   type="success"
-                  @change="handleTagLabel(group, idx)"
+                  @click.prevent.stop
+                  @change="handleTagLabel(group, val)"
                 >
                   {{ val }}
                 </el-check-tag>
+                <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical"></el-divider>
               </div>
             </template>
           </el-card>
@@ -96,9 +104,22 @@
 import { getDatasetMetadataList } from '@/api/datasetMetadata/index'
 import { onMounted, nextTick, ref, reactive } from 'vue'
 import { CountTo } from 'vue3-count-to'
+import { formatDate } from '@/utils'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute();
+const router = useRouter()
 
 onMounted(() => {
-    fetchData();
+  const modality = route.query.modality
+  if (modality) {
+    filterGroup.labels[1]["label_values"] = [modality]
+    router.replace({
+      path: route.path,
+      query: {}
+    });
+  }
+  fetchData();
 })
 
 const datasetsList = ref([])
@@ -172,6 +193,10 @@ const handleTagLabel = async (group, val) => {
   await fetchData()
 }
 
+const handleDatasetCardClicked = async (name) => {
+  router.push({ path: '/datasets/detail', query: { name: name } })
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -196,6 +221,7 @@ const handleTagLabel = async (group, val) => {
 }
 
 .content-search-container {
+  padding: 10px 0 10px 0;
   display: flex;          /* 启用 Flex 布局 */
   align-items: center;    /* 垂直居中 */
   gap: 12px;              /* 元素之间的间距 */
@@ -209,6 +235,7 @@ const handleTagLabel = async (group, val) => {
   :deep(.content-search-count) {
     color: #99a0ae;
     font-weight: bold;
+    font-size: 24px;
     min-width: 50px;       /* 给数字预留宽度，防止数字跳动时影响布局 */
   }
 
@@ -216,8 +243,8 @@ const handleTagLabel = async (group, val) => {
     margin-left: 20px;
     flex: 1;
     max-width: 200px;
-    transition: all 0.5s ease; /* 这里的 transition 作用于外层容器 */
-    border-radius: 4px;        /* 必须加上圆角，否则外层阴影是直角的，很难看 */
+    border-radius: 4px;
+    transition: all 0.5s ease;
     box-shadow: 0 8px 14px 4px var(--el-border-color) !important;
 
     &:hover {
@@ -238,12 +265,59 @@ const handleTagLabel = async (group, val) => {
   }
 }
 
-:deep(.dataset-card-footer) {
-  height: 36px;
-  padding: 4px 0 4px 20px;
+.dataset-card {
+  border-radius: 4px;
+  box-shadow: 0 2px 10px 2px var(--el-border-color) !important;
+  &:hover {
+    cursor: pointer;
+    .dataset-name-multiline {
+      color: var(--el-color-primary);
+      font-weight: 600;
+    }
+    box-shadow: 5px 5px 18px 2px var(--el-color-primary) !important;
+  }
 }
 
-.dataset-footer-author {
+:deep(.dataset-card-body) {
+  padding: 12px 20px;
+}
+
+:deep(.dataset-card-footer) {
+  height: 32px;
+  padding: 4px 0 4px 20px;
+  overflow: auto;
+}
+
+.dataset-name-multiline {
+  /* 必须使用 flex 或 block 布局 */
+  display: -webkit-box;
+
+  /* 关键：设置排列方向为垂直 */
+  -webkit-box-orient: vertical;
+
+  /* 关键：设置显示的行数 */
+  -webkit-line-clamp: 2;
+
+  /* 溢出隐藏 */
+  overflow: hidden;
+
+  /* 确保文字在必要时换行 */
+  word-break: break-all;
+
+  /* 商业工整：设置合适的小标题行高，增加阅读感 */
+  line-height: 1;
+  min-height: 1em; /* 可选：固定两行高度，保持卡片整齐 */
+}
+
+.dataset-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 8px;
+  color: var(--el-text-color-secondary);
+}
+
+.dataset-labels-tag {
   display: inline-flex;
   align-items: center;
 
@@ -272,17 +346,24 @@ const handleTagLabel = async (group, val) => {
   }
 }
 
-.dataset-footer-tag {
-  font-size: 12px;
-  margin-right: 5px;
-  margin-bottom: 5px
-}
-
 .catelog-content-container {
   margin-top: 20px;
-
   .el-card {
     margin-bottom: 20px;
+  }
+}
+
+.affix-container {
+  :deep(.el-affix--fixed) {
+    border-radius: 4px;
+    padding: auto;
+    background: #99a0ae9b;
+    .content-search-label {
+      color: var(--el-text-color-primary);
+    }
+    .content-search-count {
+      color: var(--el-text-color-primary);
+    }
   }
 }
 
