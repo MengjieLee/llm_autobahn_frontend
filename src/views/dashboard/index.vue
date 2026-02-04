@@ -32,11 +32,11 @@ onMounted(() => {
 const fetchData = async () => {
   fetchDataLoading.value = true
   try {
-    getDatasetsMetrics().then((response) => {
+    await getDatasetsMetrics().then((response) => {
       domainMatrix.datasetsAmount = response.data.datasets_amount
       datasetsBarChartData.value = response.data.datasets_distribution
     })
-    getUserMetrics().then((response) => {
+    await getUserMetrics().then((response) => {
       domainMatrix.usersAmount = response.data.users_amount
     })
     ElMessage({

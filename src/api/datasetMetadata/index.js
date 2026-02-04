@@ -1,10 +1,10 @@
 import { autobahnBackendService } from '@/utils/request'
 
-// TODO
-export function getDatasetMetadataList(params) {
+
+export function getDatasetMetadataList(data) {
   return autobahnBackendService({
-    url: '/datasets/list',
-    method: 'get',
-    params
+    url: '/api/v1/datasets/list',
+    method: 'post',
+    data
   })
 }
