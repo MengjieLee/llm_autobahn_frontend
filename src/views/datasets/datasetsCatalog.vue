@@ -78,6 +78,17 @@
               </el-row>
             </template>
             <template #footer>
+              <el-check-tag
+                class="dataset-labels-tag"
+                :checked="isLabelChecked('stages', dataset.stages[0])"
+                :key="dataset.stages[0]"
+                type="success"
+                @click.prevent.stop
+                @change="handleTagLabel('stages', filterGroup.stages, dataset.stages[0])"
+              >
+                {{ dataset.stages[0] }}
+              </el-check-tag>
+              <el-divider direction="vertical" />
               <div v-for="(group,idx) in dataset.labels" :key="group.label_name" style="display: inline">
                 <el-check-tag
                   class="dataset-labels-tag"
@@ -86,11 +97,11 @@
                   :key="val"
                   type="success"
                   @click.prevent.stop
-                  @change="handleTagLabel(group, val)"
+                  @change="handleTagLabel('labels', group, val)"
                 >
                   {{ val }}
                 </el-check-tag>
-                <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical"></el-divider>
+                <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical" />
               </div>
             </template>
           </el-card>
@@ -127,7 +138,7 @@ const catelogContentLoading = ref(false)
 
 const filterStages = ref(["SFT", "Pretrain"])
 const filterLabelsModalities = ref(["🔤 纯文本", "🏞 单图", "🖼️ 多图", "📰 图文交错", "📣 音频", "🎬 视频", "🔗 CoT", "☀️ unknown", "🌟 ALL"])
-const filterLabelsTypes = ref(["Caption", "General VQA", "Mathematics", "Chart", "OCR", "Knowledge", "Document", "Grounding", "Science", "Conversation", "Medical", "GUI", "LLM", "☀️ unknown", "🌟 ALL"])
+const filterLabelsTypes = ref(["OCR", "Mathematics", "Caption", "Document", "Grounding", "General VQA", "Chart", "GUI", "LLM", "text", "☀️ unknown", "stem", "VQA", "🌟 ALL", "Knowledge", "interleave", "多图", "Science", "Conversation", "Medical"])
 const filterLabelsLanguages = ref(["ZH", "EN", "多语种", "☀️ unknown", "🌟 ALL"])
 
 const filterGroup = reactive({
@@ -166,6 +177,9 @@ const fetchData = async () => {
 }
 
 const isLabelChecked = (labelName, val) => {
+  if (labelName === 'stages') {
+    return filterGroup.stages.includes(val)
+  }
   // 1. 在 filterGroup.labels 中找到对应 label_name 的那一组
   const targetGroup = filterGroup.labels.find(item => item.label_name === labelName);
 
@@ -178,16 +192,27 @@ const isLabelChecked = (labelName, val) => {
 };
 
 
-const handleTagLabel = async (group, val) => {
-  const targetGroup = filterGroup.labels.find(item => item.label_name === group.label_name);
-  if (targetGroup) {
-    const index = targetGroup.label_values.indexOf(val);
+const handleTagLabel = async (field, group, val) => {
+  if (field === 'stages') {
+    const index = filterGroup.stages.indexOf(val)
     if (index > -1) {
       // 如果已存在，则移除（取消选中）
-      targetGroup.label_values.splice(index, 1);
+      filterGroup.stages.splice(index, 1);
     } else {
       // 如果不存在，则添加（选中）
-      targetGroup.label_values.push(val);
+      targetGroup.stages.push(val);
+    }
+  } else {
+    const targetGroup = filterGroup.labels.find(item => item.label_name === group.label_name);
+    if (targetGroup) {
+      const index = targetGroup.label_values.indexOf(val);
+      if (index > -1) {
+        // 如果已存在，则移除（取消选中）
+        targetGroup.label_values.splice(index, 1);
+      } else {
+        // 如果不存在，则添加（选中）
+        targetGroup.label_values.push(val);
+      }
     }
   }
   await fetchData()
