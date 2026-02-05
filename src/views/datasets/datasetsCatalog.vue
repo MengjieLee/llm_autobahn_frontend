@@ -48,6 +48,22 @@
           </el-checkbox-group>
         </el-col>
       </el-row>
+
+      <!-- 分页 -->
+      <el-divider content-position="left"><svg-icon class="filter-title-icon" icon="pagination" />分页</el-divider>
+      <div class="custom-pagination-container">
+        <el-pagination
+          :current-page="pagination.currentPage"
+          :page-sizes="pagination.pageSizes"
+          :page-size="pagination.pageSize"
+          :default-page-size="pagination.pageSize"
+          layout="prev, pager, next, sizes, "
+          :total="pagination.total"
+          :pager-count="5"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </el-col>
     <el-col :xs="14" :sm="16" :lg="18" class="catelog-content-wrapper">
       <!-- 搜索头 -->
@@ -56,7 +72,7 @@
           <el-col :span="12">
             <div class="content-search-container">
               <span class="content-search-label">数据集</span>
-              <CountTo class="content-search-count" :start-val="0" :end-val="datasetsList.length" :duration="2500" />
+              <CountTo class="content-search-count" :start-val="0" :end-val="allDatasetList.length" :duration="2500" />
               <el-input class="content-search-input" v-model="filterGroup.name" @input="fetchData" placeholder="按关键字搜索 🔍" clearable ></el-input>
             </div>
           </el-col>
@@ -64,7 +80,7 @@
       </el-affix>
       <!-- 数据集列表 -->
       <el-row v-loading="catelogContentLoading" element-loading-text="🏃 努力加载中..." element-loading-custom-class="catelog-content-loading-wrapper" justify="space-between" class="catelog-content-container">
-        <el-col :xs="24" :sm="24" :md="24" :lg="11" v-for="dataset in datasetsList">
+        <el-col :xs="24" :sm="24" :md="24" :lg="11" v-for="dataset in datasetList">
           <el-card shadow="hover" @click="handleDatasetCardClicked(dataset.name)" class="dataset-card" body-class="dataset-card-body" footer-class="dataset-card-footer">
             <template #default>
               <el-row justify="space-between">
@@ -142,6 +158,8 @@ import { formatDate } from '@/utils'
 import { useRoute, useRouter } from 'vue-router'
 import { copyText } from '@/utils'
 
+const allDatasetList = ref([]) // 全量数据
+const datasetList = ref([]) // 分页展示数据
 const route = useRoute();
 const router = useRouter()
 
@@ -157,8 +175,33 @@ onMounted(() => {
   fetchData();
 })
 
+const pagination = reactive({
+  currentPage: 1,
+  pageSizes: [10, 20, 50 ,100],
+  pageSize: 20,
+  total: 0
+})
+
+// 实现分页大小变化事件
+const handleSizeChange = (val) => {
+  pagination.pageSize = val
+  pagination.currentPage = 1
+  setDatasetListByPage()
+}
+
+// 实现分页页码切换事件
+const handlePageChange = (val) => {
+  pagination.currentPage = val
+  setDatasetListByPage()
+}
+
+const setDatasetListByPage = () => {
+  const startIndex = (pagination.currentPage - 1) * pagination.pageSize
+  const endIndex = startIndex + pagination.pageSize
+  datasetList.value = allDatasetList.value.slice(startIndex, endIndex)
+}
+
 const datasetPathLabelMap = ref(["源址：", "媒体：", "索引：", "预览："])
-const datasetsList = ref([])
 const catelogContentLoading = ref(false)
 
 const filterStages = ref(["SFT", "Pretrain"])
@@ -212,15 +255,32 @@ const handleClipboard = (text) => {
 	})
 }
 
+const initDatasetList = () => {
+  pagination.total = 0
+  datasetList.value = []
+  allDatasetList.value = []
+}
+
 const fetchData = async () => {
   console.log("过滤条件变更", filterGroup)
   try {
     catelogContentLoading.value = true
+    initDatasetList()
     await getDatasetMetadataList(filterGroup).then((response) => {
-      datasetsList.value = response.data.result
+      allDatasetList.value = response.data.result
     })
+    pagination.total = allDatasetList.value.length
+    pagination.currentPage = 1
+    setDatasetListByPage()
   } catch (err) {
-
+    console.error('数据集目录查询请求失败：', err)
+    initDatasetList()
+    ElNotification({
+      title: '数据集目录查询请求失败：',
+      message: `失败原因：${err.message || '网络异常或接口错误'}`,
+      type: 'error',
+      duration: 0,
+    })
   } finally {
     nextTick(() => {
       catelogContentLoading.value = false
@@ -283,7 +343,7 @@ const handleDatasetCardClicked = async (name) => {
 .catelog-filter-wrapper {
   padding: 20px;
   height: calc(100vh - 85px);
-  background-color: #fafbfc;
+  background-color: var(--el-fill-color-extra-light);
   overflow: auto;
 }
 .catelog-content-wrapper {
@@ -360,7 +420,7 @@ const handleDatasetCardClicked = async (name) => {
 }
 
 :deep(.dataset-card-footer) {
-  height: 32px;
+  height: 36px;
   padding: 4px 0 4px 20px;
   overflow: auto;
 }
@@ -462,6 +522,22 @@ const handleDatasetCardClicked = async (name) => {
     position: sticky;
     top: 120px;
   }
+}
+
+.custom-pagination-container :deep(.el-pagination) {
+  display: flex;
+  flex-wrap: wrap;     /* 允许换行 */
+  row-gap: 12px;       /* 行间距 */
+}
+
+/* 强制让 sizes 后面的元素换行 */
+/* 在 Element Plus 中，sizes 对应的是 .el-pagination__sizes */
+.custom-pagination-container :deep(.el-pagination__jump) {
+  margin-right: auto;  /* 将 total 和 sizes 靠左，或者根据需要调整 */
+}
+
+.custom-pagination-container :deep(.el-pagination__sizes) {
+  margin-left: 0px;
 }
 
 </style>

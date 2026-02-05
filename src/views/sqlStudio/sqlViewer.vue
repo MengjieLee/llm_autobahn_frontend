@@ -454,14 +454,14 @@ const handleRowClick = (row) => {
   activeRow.value = row
 }
 
-// TODO 实现分页大小变化事件
+// 实现分页大小变化事件
 const handleSizeChange = (val) => {
   pagination.pageSize = val
   pagination.currentPage = 1
   setTableDataByPage()
 }
 
-// TODO 实现分页页码切换事件
+// 实现分页页码切换事件
 const handlePageChange = (val) => {
   pagination.currentPage = val
   setTableDataByPage()
