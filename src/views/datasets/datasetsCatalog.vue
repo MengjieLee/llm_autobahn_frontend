@@ -63,7 +63,7 @@
         </el-row>
       </el-affix>
       <!-- 数据集列表 -->
-      <el-row v-loading="catelogContentLoading" element-loading-text="🏃 努力加载中..." justify="space-between" class="catelog-content-container">
+      <el-row v-loading="catelogContentLoading" element-loading-text="🏃 努力加载中..." element-loading-custom-class="catelog-content-loading-wrapper" justify="space-between" class="catelog-content-container">
         <el-col :xs="24" :sm="24" :md="24" :lg="11" v-for="dataset in datasetsList">
           <el-card shadow="hover" @click="handleDatasetCardClicked(dataset.name)" class="dataset-card" body-class="dataset-card-body" footer-class="dataset-card-footer">
             <template #default>
@@ -79,7 +79,7 @@
             </template>
             <template #footer>
               <el-check-tag
-                class="dataset-labels-tag"
+                class="dataset-footer-tags"
                 :checked="isLabelChecked('stages', dataset.stages[0])"
                 :key="dataset.stages[0]"
                 type="success"
@@ -89,9 +89,32 @@
                 {{ dataset.stages[0] }}
               </el-check-tag>
               <el-divider direction="vertical" />
+              <el-popover
+                placement="top-start"
+                title="存储信息概览"
+                :width="420"
+                trigger="hover"
+              >
+                <template #reference>
+                  <el-button size="small" @click.prevent.stop class="m-2"><el-icon ><View /></el-icon>查看存储</el-button>
+                </template>
+                <template #default>
+                  <el-row justify="space-between" v-for="(datasetPath, idx) in [dataset.src_paths, dataset.media_root_dir, dataset.converted_paths, dataset.converted_preview_paths]">
+                    <el-col :span="4">
+                      <el-button text :disabled="isContentEmpty(datasetPath)" @click.prevent="handleClipboard(datasetPath)">
+                        <el-icon ><CopyDocument /></el-icon><span>{{ datasetPathLabelMap[idx] }}</span>
+                      </el-button>
+                    </el-col>
+                    <el-col :span="18">
+                      <p class="dataset-name-multiline" style="margin: 0 0 15px 0;">{{ datasetPath || '无' }}</p>
+                    </el-col>
+                  </el-row>
+                </template>
+              </el-popover>
+              <el-divider direction="vertical" />
               <div v-for="(group,idx) in dataset.labels" :key="group.label_name" style="display: inline">
                 <el-check-tag
-                  class="dataset-labels-tag"
+                  class="dataset-footer-tags dataset-labels-tag"
                   :checked="isLabelChecked(group.label_name, val)"
                   v-for="val in group.label_values"
                   :key="val"
@@ -101,7 +124,7 @@
                 >
                   {{ val }}
                 </el-check-tag>
-                <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical" />
+                <!-- <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical" /> -->
               </div>
             </template>
           </el-card>
@@ -117,6 +140,7 @@ import { onMounted, nextTick, ref, reactive } from 'vue'
 import { CountTo } from 'vue3-count-to'
 import { formatDate } from '@/utils'
 import { useRoute, useRouter } from 'vue-router'
+import { copyText } from '@/utils'
 
 const route = useRoute();
 const router = useRouter()
@@ -133,6 +157,7 @@ onMounted(() => {
   fetchData();
 })
 
+const datasetPathLabelMap = ref(["源址：", "媒体：", "索引：", "预览："])
 const datasetsList = ref([])
 const catelogContentLoading = ref(false)
 
@@ -159,6 +184,33 @@ const filterGroup = reactive({
     }
   ]
 })
+
+const isContentEmpty = (val) => {
+  if (val === null || val === undefined) return true;
+  if (typeof val === 'string') return val.trim() === '';
+  if (Array.isArray(val)) return val.length === 0;
+  return false;
+};
+
+const handleClipboard = (text) => {
+  if (!text) {
+    ElMessage.closeAll();
+		ElMessage({
+			message: '无内容!',
+			type: 'warning',
+			duration: 2 * 1000,
+    })
+    return
+  }
+	copyText(text, () => {
+    ElMessage.closeAll();
+		ElMessage({
+			message: 'Copied!',
+			type: 'success',
+			duration: 2 * 1000,
+    })
+	})
+}
 
 const fetchData = async () => {
   console.log("过滤条件变更", filterGroup)
@@ -342,7 +394,7 @@ const handleDatasetCardClicked = async (name) => {
   color: var(--el-text-color-secondary);
 }
 
-.dataset-labels-tag {
+.dataset-footer-tags {
   display: inline-flex;
   align-items: center;
 
@@ -371,6 +423,10 @@ const handleDatasetCardClicked = async (name) => {
   }
 }
 
+.dataset-labels-tag {
+  margin-right: 10px;
+}
+
 .catelog-content-container {
   margin-top: 20px;
   .el-card {
@@ -389,6 +445,22 @@ const handleDatasetCardClicked = async (name) => {
     .content-search-count {
       color: var(--el-text-color-primary);
     }
+  }
+}
+
+:deep(.catelog-content-loading-wrapper) {
+  .el-loading-spinner {
+    /* 1. 撤销默认的 50% 居中偏移 */
+    top: 0 !important;
+    margin-top: 0 !important;
+
+    /* 2. 设为固定或绝对定位在顶部 */
+    position: absolute;
+    padding-top: 20px; /* 距离容器顶部的间距 */
+
+    /* 3. 如果希望在滚动时也悬浮在屏幕顶部（吸顶效果） */
+    position: sticky;
+    top: 120px;
   }
 }
 
