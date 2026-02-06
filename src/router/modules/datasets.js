@@ -15,7 +15,7 @@ const datasets = {
       component: () => import('@/views/datasets/datasetsCatalog.vue'),
       name: 'Catalog',
       meta: {
-        title: '数据集-概览',
+        title: '目录',
         icon: 'form',
       }
     },
@@ -24,7 +24,7 @@ const datasets = {
       component: () => import('@/views/datasets/datasetsDetail.vue'),
       name: 'Detail',
       meta: {
-        title: '数据集-明细',
+        title: '可视化',
         icon: 'form',
       }
     },

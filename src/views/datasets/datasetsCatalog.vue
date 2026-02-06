@@ -106,7 +106,7 @@
               </el-check-tag>
               <el-divider direction="vertical" />
               <el-popover
-                placement="top-start"
+                placement="bottom"
                 title="存储信息概览"
                 :width="420"
                 trigger="hover"
