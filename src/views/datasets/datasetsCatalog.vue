@@ -95,14 +95,15 @@
             </template>
             <template #footer>
               <el-check-tag
+                v-for="stage in dataset.stages"
                 class="dataset-footer-tags"
-                :checked="isLabelChecked('stages', dataset.stages[0])"
-                :key="dataset.stages[0]"
+                :checked="isLabelChecked('stages', stage)"
+                :key="stage"
                 type="success"
                 @click.prevent.stop
-                @change="handleTagLabel('stages', filterGroup.stages, dataset.stages[0])"
+                @change="handleTagLabel('stages', filterGroup.stages,stage)"
               >
-                {{ dataset.stages[0] }}
+                {{ stage }}
               </el-check-tag>
               <el-divider direction="vertical" />
               <el-popover
@@ -163,16 +164,66 @@ const datasetList = ref([]) // 分页展示数据
 const route = useRoute();
 const router = useRouter()
 
-onMounted(() => {
-  const modality = route.query.modality
-  if (modality) {
-    filterGroup.labels[1]["label_values"] = [modality]
+const filterGroup = reactive({
+  name: "",
+  stages: ["SFT", "Pretrain"],
+  labels: [
+    {
+      label_name: "数据模态",
+      label_values: []
+    },
+    {
+      label_name: "数据细分类型",
+      label_values: []
+    },
+    {
+        label_name: "language",
+        label_values: []
+    }
+  ]
+})
+
+onMounted(async () => {
+  try {
+    // 1. 核心修复：获取 URL 中的 query 参数（解构+默认值，避免 undefined）
+    const { query } = route;
+    // 遍历 query 对象，找到唯一的筛选字段（stage/modality/type/language）
+    const [queryParamField, queryParamValue] = Object.entries(query).find(([key]) =>
+      ['stage', 'modality', 'type', 'language'].includes(key)
+    ) || [];
+
+    // 2. 字段映射与筛选条件赋值（修复判断逻辑+reactive 赋值规范）
+    const fieldMap = ["modality", "type", "language"];
+    if (queryParamField && queryParamValue) { // 先校验参数存在
+      // 处理 labels 类字段（modality/type/language）
+      console.log("labelsIdx", queryParamField)
+      if (fieldMap.includes(queryParamField)) {
+        const labelIndex = fieldMap.indexOf(queryParamField);
+        // 确保下标有效，避免越界赋值
+        if (labelIndex >= 0 && labelIndex < filterGroup.labels.length) {
+          // Vue3 reactive 数组/对象赋值规范
+          filterGroup.labels[labelIndex].label_values = [queryParamValue];
+        }
+      }
+      // 处理 stage 字段
+      else if (queryParamField === 'stage') {
+        // 修复：原代码错误赋值给 queryParam，实际应赋值给 stages
+        filterGroup.stages = [queryParamValue];
+      }
+    }
+
+    // 3. 修复：先加载数据，再清空 query（避免数据还没加载就丢参数）
+    await fetchData();
+
+  } catch (err) {
+    console.error("onMounted 加载筛选条件失败:", err);
+  } finally {
+    // 4. 修复：路由替换时保留原始 path，仅清空 query
     router.replace({
       path: route.path,
-      query: {}
+      query: {} // 清空 URL 中的筛选参数，避免刷新重复解析
     });
   }
-  fetchData();
 })
 
 const pagination = reactive({
@@ -209,24 +260,6 @@ const filterLabelsModalities = ref(["🔤 纯文本", "🏞 单图", "🖼️ �
 const filterLabelsTypes = ref(["OCR", "Mathematics", "Caption", "Document", "Grounding", "General VQA", "Chart", "GUI", "LLM", "text", "☀️ unknown", "stem", "VQA", "🌟 ALL", "Knowledge", "interleave", "多图", "Science", "Conversation", "Medical"])
 const filterLabelsLanguages = ref(["ZH", "EN", "多语种", "☀️ unknown", "🌟 ALL"])
 
-const filterGroup = reactive({
-  name: "",
-  stages: ["SFT", "Pretrain"],
-  labels: [
-    {
-      label_name: "数据模态",
-      label_values: []
-    },
-    {
-      label_name: "数据细分类型",
-      label_values: []
-    },
-    {
-        label_name: "language",
-        label_values: []
-    }
-  ]
-})
 
 const isContentEmpty = (val) => {
   if (val === null || val === undefined) return true;

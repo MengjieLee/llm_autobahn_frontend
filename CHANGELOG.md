@@ -10,6 +10,7 @@ title: 变更记录
 * 数据 pipeline | TBD
 
 ### 更新记录
+* v0.0.21 | feat(DatasetDetail): 新增数据可视化页 | 2026-02-06 | 李梦杰
 * v0.0.20 | feat(DatasetViwer): 封装 DatasetViwer 组件并适配到存量业务页面 | 2026-02-06 | 李梦杰
 * v0.0.19 | feat(datasets): 数据集目录页新增分页并优化渲染效率 | 2026-02-05 | 李梦杰
 * v0.0.18 | feat(datasets): 数据集目录页新增查看存储 | 2026-02-05 | 李梦杰

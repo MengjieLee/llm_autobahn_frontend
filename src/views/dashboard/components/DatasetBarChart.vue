@@ -51,9 +51,9 @@ const initChart = () => {
   setOptions(props.datasetsBarChartData);
 };
 
-const handleRouteJump = (modalityValue) => {
+const handleRouteJump = (typeValue) => {
   // 示例：根据 label 跳转到不同路由，并携带参数
-  router.push({ path: '/datasets/catalog', query: { modality: modalityValue } });
+  router.push({ path: '/datasets/catalog', query: { type: typeValue } });
 };
 
 const setOptions = (data) => {
