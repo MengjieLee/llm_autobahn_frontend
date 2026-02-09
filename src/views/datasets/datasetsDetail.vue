@@ -1,13 +1,27 @@
 <template>
-  <div v-if="!datasetName">
-    <el-empty description="未指定数据集，请前往<数据集-目录>页查阅 ╰(*°▽°*)╯">
-      <el-button type="primary" @click="redirectToDatasetCatalog">前往数据集-目录</el-button>
+  <div v-if="!hasData">
+    <el-empty>
+      <template #description>
+        <p style="display: flex; justify-content: center; margin: 10px 0;">
+          <span>方式一：未指定数据集，请前往页面</span>
+          <el-link type="primary" @click="redirectToDatasetCatalog">数据集-目录</el-link>
+          <span>查阅 ╰(*°▽°*)╯"</span>
+        </p>
+        <el-row justify="space-between" style="display: flex; align-items: center;">
+          <el-col :span="21" >
+            <el-input type="textarea" placeholder="方式二：快速查阅预览文件 Preview 地址（每行一个）" v-model="previewPaths"></el-input>
+          </el-col>
+          <el-col :span="2">
+            <el-button @click="onlyPreviewHandler" icon="search" type="primary" circle plain />
+          </el-col>
+        </el-row>
+      </template>
     </el-empty>
   </div>
 
   <div v-else v-loading="queryLoading" element-loading-text="🏃 努力加载中..." >
     <!-- 数据元数据 -->
-    <div class="detail-header-container">
+    <div v-if="!isOnlyPreview" class="detail-header-container">
       <el-row>
         <el-col><div class="dataset-meta-name">{{ datasetMeta.name }}</div></el-col>
         <el-col v-if="datasetMeta.source">
@@ -94,6 +108,13 @@
         </el-col>
       </el-row>
     </div>
+    <!-- 只查阅 Preview 专用 -->
+    <div v-if="isOnlyPreview" style="padding: 0 20px">
+      <p>快速查阅预览文件</p>
+      <p>
+        <el-input type="textarea" placeholder="快速查阅预览文件 Preview 地址（每行一个）" v-model="previewPaths" @change="onlyPreviewHandler"></el-input>
+      </p>
+    </div>
     <!-- 数据可视内容 -->
     <div>
       <el-row>
@@ -137,7 +158,7 @@ import { ref, onMounted, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import DatasetViewer from '@/components/DatasetViewer.vue'
 import { formatDate, copyText } from '@/utils'
-import { getDatasetDetail } from '@/api/datasetMetadata'
+import { getDatasetDetail, getDatasetPreview } from '@/api/datasetMetadata'
 
 const route = useRoute()
 const router = useRouter()
@@ -147,6 +168,9 @@ const datasetName = ref("")
 const datasetSplit = ref("")
 const datasetSplitLenght = ref(0)
 const datasetMeta = ref({ splits: {} })
+const hasData = ref(false)
+const previewPaths = ref("")
+const isOnlyPreview = ref(false)
 const queryLoading = ref(false)
 const datasetPathLabelMap = ref(["源址：", "媒体：", "索引：", "预览："])
 
@@ -167,6 +191,7 @@ const fetchData = async () => {
     queryLoading.value = false
   }
 }
+
 const isOSSFormat = (val) => {
   return val ? '开源' : '非开源'
 }
@@ -182,6 +207,7 @@ watch(() => datasetMeta.value.splits, (newSplits) => {
 watch(datasetSplit, (newSplit) => {
   if (newSplit && datasetMeta.value.splits[newSplit]) {
     allTableData.value = datasetMeta.value.splits[newSplit]
+    hasData.value = true
   }
 })
 
@@ -231,12 +257,35 @@ const handleClipboard = (text) => {
 	})
 }
 
+const onlyPreviewHandler = async () => {
+  if (!previewPaths.value) return
+
+  isOnlyPreview.value = true
+  hasData.value = true
+  queryLoading.value = true
+  try {
+    const res = await getDatasetPreview({paths: previewPaths.value})
+    datasetMeta.value = res.data
+    ElMessage.success('数据可视化请求成功')
+  } catch (err) {
+    console.log(err)
+    ElMessage.error('数据可视化请求失败')
+  } finally {
+    queryLoading.value = false
+  }
+}
+
 // --- 生命周期 ---
 onMounted(() => {
   const name = route.query.name
   if (name) {
     datasetName.value = name
+    hasData.value = true
     fetchData()
+    router.replace({
+      path: route.path,
+      query: {} // 清空 URL 中的筛选参数，避免刷新重复解析
+    });
   }
 })
 </script>

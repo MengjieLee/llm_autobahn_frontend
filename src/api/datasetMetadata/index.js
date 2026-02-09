@@ -16,3 +16,11 @@ export function getDatasetDetail(params) {
     params
   })
 }
+
+export function getDatasetPreview(data) {
+  return autobahnBackendService({
+    url: '/api/v1/datasets/preview',
+    method: 'post',
+    data
+  })
+}
