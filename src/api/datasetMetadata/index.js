@@ -8,3 +8,11 @@ export function getDatasetMetadataList(data) {
     data
   })
 }
+
+export function getDatasetDetail(params) {
+  return autobahnBackendService({
+    url: '/api/v1/datasets/detail',
+    method: 'get',
+    params
+  })
+}

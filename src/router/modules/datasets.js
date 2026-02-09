@@ -7,7 +7,7 @@ const datasets = {
   name: 'datasets',
   meta: {
     title: '数据集',
-    icon: 'test'
+    icon: 'datasets'
   },
   children: [
     {
@@ -16,7 +16,7 @@ const datasets = {
       name: 'Catalog',
       meta: {
         title: '目录',
-        icon: 'form',
+        icon: 'datasets',
       }
     },
     {
@@ -25,7 +25,7 @@ const datasets = {
       name: 'Detail',
       meta: {
         title: '可视化',
-        icon: 'form',
+        icon: 'eye-open',
       }
     },
   ]

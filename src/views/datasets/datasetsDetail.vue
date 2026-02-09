@@ -5,11 +5,11 @@
     </el-empty>
   </div>
 
-  <div v-else v-loading="queryLoading">
+  <div v-else v-loading="queryLoading" element-loading-text="🏃 努力加载中..." >
     <!-- 数据元数据 -->
     <div class="detail-header-container">
       <el-row>
-        <el-col><div class="dataset-meta-name">【Mock 开发中】{{ datasetMeta.name }}</div></el-col>
+        <el-col><div class="dataset-meta-name">{{ datasetMeta.name }}</div></el-col>
         <el-col v-if="datasetMeta.source">
           <div class="dataset-meta-source"><span>来源: </span>{{ datasetMeta.source }}</div>
         </el-col>
@@ -22,6 +22,13 @@
             @click.prevent.stop
           >
             <span>数据协议：</span>{{ isOSSFormat(val) }}
+          </el-tag>
+          <el-tag
+            class="dataset-meta-tag"
+            type="info"
+            @click.prevent.stop
+          >
+            <span>Size（rows）：</span>{{ datasetMeta.size }}
           </el-tag>
           <el-tag
             class="dataset-meta-tag"
@@ -88,10 +95,21 @@
       </el-row>
     </div>
     <!-- 数据可视内容 -->
-    <div class="detail-content-container">
+    <div>
       <el-row>
         <el-col class="splits-wrapper">
-          <div v-if="datasetSplitLenght > 0" class="splits-label">Splits ({{ datasetSplitLenght }}):</div>
+          <div v-if="datasetSplitLenght > 0" class="splits-label">
+            <el-popover
+              content="预览条目数至多 100 条。"
+              placement="top"
+              width="200"
+            >
+              <template #reference>
+                <el-icon><InfoFilled /></el-icon>
+              </template>
+            </el-popover>
+            Preview Splits ({{ datasetSplitLenght }}):
+          </div>
           <el-select v-model="datasetSplit" placeholder="请选择分片" style="width: 240px">
             <el-option
               v-for="(data, key) in datasetMeta.splits"
@@ -101,8 +119,9 @@
             />
           </el-select>
         </el-col>
-        <el-col>
+        <el-col class="detail-content-container">
           <DatasetViewer
+            height="56vh"
             :all-table-data="allTableData"
             :query-loading="queryLoading"
           />
@@ -118,6 +137,7 @@ import { ref, onMounted, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import DatasetViewer from '@/components/DatasetViewer.vue'
 import { formatDate, copyText } from '@/utils'
+import { getDatasetDetail } from '@/api/datasetMetadata'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,77 +157,9 @@ const fetchData = async () => {
 
   try {
     queryLoading.value = true
-    // 模拟接口请求
-    // const res = await api.getDatasetDetail(datasetName.value)
-    const res = {
-      "name": "VideoChat2-IT",
-      "source": "https://huggingface.co/datasets/OpenGVLab/VideoChat2-IT",
-      "is_open_source": true,
-      "size": "{'train-formatted': 670029}",
-      "count": null,
-      "src_paths": [
-          "/mnt/cfs_bj/dataset/multi_modal/video/VideoChat2-IT"
-      ],
-      "src_volume_paths": [
-          "/Volumes/qianfan_bos_catalog/all_data/VideoChat2-IT"
-      ],
-      "converted_paths": [
-          "bos://llm-data-process/mnt/cfs_bj/dataset/multi_modal/video/VideoChat2-IT-formatted/train-formatted.jsonl"
-      ],
-      "converted_preview_paths": [
-          "/mnt/cfs_bj_mt/datasets/data_platform/preview/sft/VideoChat2_IT/train-formatted_preview.jsonl"
-      ],
-      "media_root_dir": "bos://llm-data-process/dataset/medias/video",
-      "stages": [
-          "SFT"
-      ],
-      "parent_id": null,
-      "process_note": "",
-      "tags": [
-          "InternVL2.5 开源sft数据；多轮对话"
-      ],
-      "labels": [
-          {
-              "label_name": "数据模态",
-              "label_values": [
-                  "🎬 视频"
-              ]
-          },
-          {
-              "label_name": "数据细分类型",
-              "label_values": [
-                  "General VQA"
-              ]
-          },
-          {
-              "label_name": "language",
-              "label_values": [
-                  "EN"
-              ]
-          }
-      ],
-      "registrant": "陈捷挺",
-      "tables": [
-          "videochat2_it_v0"
-      ],
-      "tokens": null,
-      "groups": [
-          "official",
-          "group_a"
-      ],
-      "created_at": "2025-06-05T23:16:50.685000",
-      "updated_at": "2025-10-10T13:56:57.956000",
-      "splits": {
-        "train-formatted_preview_2": [
-          {"id": "next_qa-3441910437", "video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "relative_video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "conversations": [{"from": "human", "value": "<video>\nKeep in mind the causal and temporal aspects of the actions while watching the video, then determine the most accurate choice."}, {"from": "gpt", "value": "Answer: (D) ducked."}], "absolute_videos": ["/mnt/cfs_bj/dataset/multi_modal/video/Next-QA/NExTVideo/1203/3441910437.mp4"]},
-          {"id": "next_qa-3441910437", "video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "relative_video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "conversations": [{"from": "human", "value": "<video>\nKeep in mind the causal and temporal aspects of the actions while watching the video, then determine the most accurate choice."}, {"from": "gpt", "value": "Answer: (D) ducked."}], "absolute_videos": ["/mnt/cfs_bj/dataset/multi_modal/video/Next-QA/NExTVideo/1203/3441910437.mp4"]},
-        ],
-        "test-formatted_preview_3": [
-          {"id": "next_qa-3441910437", "video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "relative_video": ["Next-QA/NExTVideo/1203/3441910437.mp4"], "conversations": [{"from": "human", "value": "<video>\nKeep in mind the causal and temporal aspects of the actions while watching the video, then determine the most accurate choice."}, {"from": "gpt", "value": "Answer: (D) ducked."}], "absolute_videos": ["/mnt/cfs_bj/dataset/multi_modal/video/Next-QA/NExTVideo/1203/3441910437.mp4"]},
-        ]
-      }
-    }
-    datasetMeta.value = res
+    const res = await getDatasetDetail({name: datasetName.value})
+    datasetMeta.value = res.data
+    ElMessage.success('数据集详情请求成功')
   } catch (err) {
     console.log(err)
     ElMessage.error('获取数据集详情失败')
@@ -215,7 +167,6 @@ const fetchData = async () => {
     queryLoading.value = false
   }
 }
-
 const isOSSFormat = (val) => {
   return val ? '开源' : '非开源'
 }
@@ -345,19 +296,18 @@ onMounted(() => {
   }
 }
 
-.detail-content-container {
-  padding: 10px 20px 20px 20px;
-  height: calc(75vh);
-  overflow: auto;
-
-  .splits-wrapper{
-    margin-bottom: 20px;
-    .splits-label {
-      margin-bottom: 10px;
-      color: #99a0ae;
-    }
+.splits-wrapper{
+  padding: 10px 20px 0px 20px;
+  margin-bottom: 20px;
+  .splits-label {
+    margin-bottom: 10px;
+    color: #99a0ae;
   }
 }
 
+.detail-content-container {
+  height: calc(65vh);
+  overflow: auto;
+}
 
 </style>

@@ -55,8 +55,8 @@
           </div>
         </div>
         <template #footer>
-          <el-button :loading="queryLoading" class="sql-query-btn"  type="primary" @click="runSql">
-            执行 SQL
+          <el-button :disabled="queryLoading" :loading="queryLoading" class="sql-query-btn"  type="primary" @click="runSql">
+            {{ queryLoading ? '正在努力加载...' : '执行 SQL' }}
           </el-button>
           <el-button class="sql-query-btn" type="success" @click="exportSQL" ref="sqlExportBtnRef">
             导出至
@@ -101,7 +101,6 @@ import { postSQLQuery } from '@/api/SQLAdaptor/index'
 import { startProcessScheduler } from '@/api/processScheduler/index'
 import { useRouter } from 'vue-router'
 import { formatDate } from '@/utils'
-import { ElNotification, ElMessage } from 'element-plus'
 import DatasetViewer from '@/components/DatasetViewer.vue'
 
 // 示例数据
@@ -170,26 +169,7 @@ const runSql = async () => {
 
     // 4. 处理响应数据 - 标记媒体类型
     if (response && response.data.result.length > 0) {
-      allTableData.value = response.data.result.map((record) => {
-        const newRecord = { ...record, isExpanded: false } // 初始化展开状态
-
-        // 优先级：image > video > audio
-        if (record.image && record.image.length) {
-          newRecord.medium = record.image
-          newRecord.mediaType = 'image'
-        } else if (record.video && record.video.length) {
-          newRecord.medium = record.video
-          newRecord.mediaType = 'video'
-        } else if (record.audio && record.audio.length) {
-          newRecord.medium = record.audio
-          newRecord.mediaType = 'audio'
-        } else {
-          newRecord.medium = []
-          newRecord.mediaType = 'none'
-        }
-
-        return newRecord
-      })
+      allTableData.value = response.data.result
 
       ElNotification({
         title: '执行成功',

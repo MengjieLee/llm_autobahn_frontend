@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-form">
       <div class="title-container">
-        <h3 class="title">欢迎使用 Data Autobahn <span>(v{{version}})</span></h3>
+        <h3 class="title">欢迎使用 Data Vortex <span>(v{{version}})</span></h3>
       </div>
 
       <div class="auth-diagram">
@@ -16,7 +16,7 @@
         </div>
 
         <div class="auth-circle">
-          <img class="auth-circle-img" :src="logoApp" alt="Data Autobahn logo" />
+          <img class="auth-circle-img" :src="logoApp" alt="Data Vortex logo" />
         </div>
       </div>
 

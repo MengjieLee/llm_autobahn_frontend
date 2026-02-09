@@ -24,7 +24,7 @@ router.beforeEach(async (to, from, next) => {
   NProgress.start()
 
   // set page title
-  document.title = to.meta.title ? `${to.meta.title} - Data Autobahn` : `Data Autobahn`
+  document.title = to.meta.title ? `${to.meta.title} - Data Vortex` : `Data Vortex`
 
   // determine whether the user has logged in
   const hasToken = dispatch.user.getToken()

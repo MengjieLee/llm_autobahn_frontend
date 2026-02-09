@@ -24,7 +24,7 @@ const props = defineProps({
         default: 'dark', // dark light
     },
 })
-const title = ref('Data Autobahn')
+const title = ref('Data Vortex')
 </script>
 
 <style lang="scss" scoped>
@@ -32,7 +32,7 @@ const title = ref('Data Autobahn')
   transition: opacity 1.5s;
 }
 
-// .sidebarLogoFade-leave-to 
+// .sidebarLogoFade-leave-to
 .sidebarLogoFade-enter-from{
   opacity: 0;
 }

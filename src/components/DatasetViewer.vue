@@ -10,7 +10,7 @@
         stripe
         :show-header="hasData"
         highlight-current-row
-        height="100%"
+        :height="height ? height : '100%'"
         size="small"
         @row-click="handleRowClick"
       >
@@ -22,7 +22,7 @@
               </template>
             </el-empty>
           </div>
-          <div v-else><el-icon class="is-loading" size="large"><Loading /></el-icon> 请耐心等待, 努力加载中 ╰(*°▽°*)╯ ...</div>
+          <div v-else><el-icon class="is-loading" size="large"><Loading /></el-icon> 请不要切换页面，数据正在努力加载中╰(*°▽°*)╯ ...</div>
         </template>
         <el-table-column
           label="media"
@@ -55,7 +55,7 @@
                       @click.prevent.stop="toggleConversationsExpand(scope.$index, scope.row)"
                     >
                       <template #error>
-                        <div>加载失败</div>
+                        <div>图片加载失败</div>
                       </template>
                     </el-image>
 
@@ -83,7 +83,7 @@
 
                   </template>
                 </div>
-                <div v-else>加载失败</div>
+                <div v-else>媒体资源加载失败</div>
               </el-col>
               <el-col :xs="8" :sm="8" :md="8" :lg="6">
                 <!-- 显示剩余额外媒体展开按钮 -->
@@ -309,10 +309,10 @@ import { reactive, ref, computed, nextTick, watch } from 'vue'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
 import { View, Hide, Loading } from '@element-plus/icons-vue'
-import { ElNotification, ElMessage } from 'element-plus'
 
 // 对外暴露的参数：全量数据
 const props = defineProps({
+  height: { type: String, default: '100%' },
   allTableData: {
     type: Array,
     default: () => [],
@@ -336,11 +336,35 @@ const pagination = reactive({
   total: 0
 })
 
+// 格式化原始数据，统一媒体字段格式，便于前端展示
+const formatTableData = (rawData) => {
+  return rawData.map((record) => {
+    const newRecord = { ...record, isExpanded: false } // 初始化展开状态
+
+    // 优先级：image > video > audio
+    if (record.image && record.image.length) {
+      newRecord.medium = record.image
+      newRecord.mediaType = 'image'
+    } else if (record.video && record.video.length) {
+      newRecord.medium = record.video
+      newRecord.mediaType = 'video'
+    } else if (record.audio && record.audio.length) {
+      newRecord.medium = record.audio
+      newRecord.mediaType = 'audio'
+    } else {
+      newRecord.medium = []
+      newRecord.mediaType = 'none'
+    }
+
+    return newRecord
+  })
+}
+
 // 分页逻辑
 const setTableDataByPage = () => {
   const startIndex = (pagination.currentPage - 1) * pagination.pageSize
   const endIndex = startIndex + pagination.pageSize
-  tableData.value = props.allTableData.slice(startIndex, endIndex)
+  tableData.value = formatTableData(props.allTableData).slice(startIndex, endIndex)
 }
 
 const activeRow = ref(null)

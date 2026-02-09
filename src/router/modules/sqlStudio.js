@@ -7,7 +7,7 @@ const sqlStudio = {
   name: 'SQLStudio',
   meta: {
     title: 'SQL 工具台',
-    icon: 'test'
+    icon: 'sql'
   },
   children: [
     {
@@ -15,8 +15,8 @@ const sqlStudio = {
       component: () => import('@/views/sqlStudio/sqlViewer.vue'),
       name: 'SQL Viewer',
       meta: {
-        title: '透视视图',
-        icon: 'form',
+        title: 'SQL 透视',
+        icon: 'sql',
       }
     },
     {

@@ -26,7 +26,7 @@ const props = defineProps({
     required: true,
     default: () => []
   },
-  title: { type: String, default: '数据集分布统计a' }
+  title: { type: String, default: '数据集分布统计' }
 });
 
 const chartRef = ref(null);
