@@ -260,11 +260,22 @@ const handleClipboard = (text) => {
 const onlyPreviewHandler = async () => {
   if (!previewPaths.value) return
 
+  const pathList = previewPaths.value
+    .split('\n') // 按换行符分割成数组
+    .map(path => path.trim()) // 去除每个元素的首尾空格
+    .filter(path => path) // 过滤掉空字符串（空行）
+
+  // 如果分割后没有有效路径，直接提示并返回
+  if (pathList.length === 0) {
+    ElMessage.warning('请输入有效的预览文件地址')
+    return
+  }
+
   isOnlyPreview.value = true
   hasData.value = true
   queryLoading.value = true
   try {
-    const res = await getDatasetPreview({paths: previewPaths.value})
+    const res = await getDatasetPreview({paths: pathList})
     datasetMeta.value = res.data
     ElMessage.success('数据可视化请求成功')
   } catch (err) {
