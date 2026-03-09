@@ -10,6 +10,8 @@ title: 变更记录
 * 数据 pipeline | TBD
 
 ### 更新记录
+* v0.0.25 | fix(preview): 预览签名逻辑 | 2026-03-05 | 李梦杰
+* v0.0.24 | fix(datasetsDetail): 修复单个索引文件的预览 | 2026-02-27 | 李梦杰
 * v0.0.23 | feat(DatasetDetail): 可视化适配单独查阅批量的 Preview 文件 | 2026-02-09 | 李梦杰
 * v0.0.22 | feat(Dataset): 新增数据集可视化组件并做适配 | 2026-02-09 | 李梦杰
 * v0.0.21 | feat(DatasetDetail): 新增数据可视化页 | 2026-02-06 | 李梦杰
