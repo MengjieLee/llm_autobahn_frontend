@@ -10,6 +10,7 @@ title: 变更记录
 * 数据 pipeline | TBD
 
 ### 更新记录
+* v0.0.27 | feat(SQL): 支持数据集名的可视化和SQL分析的交互 | 2026-03-16 | 李梦杰
 * v0.0.26 | feat(datasetAnalysis): 新增数据集跳转 SQL 分析 | 2026-03-16 | 李梦杰
 * v0.0.25 | fix(preview): 预览签名逻辑 | 2026-03-05 | 李梦杰
 * v0.0.24 | fix(datasetsDetail): 修复单个索引文件的预览 | 2026-02-27 | 李梦杰

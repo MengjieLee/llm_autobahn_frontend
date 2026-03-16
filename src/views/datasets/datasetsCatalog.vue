@@ -397,7 +397,7 @@ const handleQuickVisualization = (dataset) => {
 
 const handleAnalysis = (dataset) => {
   overlayVisible.value[dataset.name] = false // 关闭遮罩
-  router.push({ path: '/sqlStudio/sqlViewer', query: { name: dataset.tables[0] } })
+  router.push({ path: '/sqlStudio/sqlViewer', query: { name: dataset.name } })
 }
 
 </script>

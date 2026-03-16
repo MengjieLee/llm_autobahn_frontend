@@ -9,6 +9,14 @@ export function getDatasetMetadataList(data) {
   })
 }
 
+export function getDatasetNameMap(data) {
+  return autobahnBackendService({
+    url: '/api/v1/datasets/name-map',
+    method: 'post',
+    data
+  })
+}
+
 export function getDatasetDetail(params) {
   return autobahnBackendService({
     url: '/api/v1/datasets/detail',

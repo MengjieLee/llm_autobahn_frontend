@@ -89,6 +89,7 @@
 <script setup>
 import { inject, reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { postSQLQuery } from '@/api/SQLAdaptor/index'
+import { getDatasetNameMap } from '@/api/datasetMetadata/index'
 import { startProcessScheduler } from '@/api/processScheduler/index'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils'
@@ -112,6 +113,7 @@ const router = useRouter()
 
 const queryLoading = ref(false)
 const sqlQueryName = ref('mantis_instruct_dreamsim_v1')
+const sqlQueryMapping = ref({})
 const sql = ref(`SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`)
 
 // 动态生成 SQL 模板
@@ -281,15 +283,44 @@ const showAlert = () => {
   }, 5000)
 };
 
+// --- 生命周期 ---
 onMounted(() => {
-  showAlert();
-  // --- 生命周期 ---
-  const name = route.query.name
-  if (name) {
-    sqlQueryName.value = name
-    sql.value = `SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`
-    runSql()
+  showAlert();  
+  const queryName = route.query.name
+  if (queryName) {
+    try {
+      queryLoading.value = true
+      getDatasetNameMap({}).then((response) => {
+        sqlQueryMapping.value = response.data
+        // console.log('sqlQueryMapping', sqlQueryMapping.value)
+        const name = sqlQueryMapping.value[queryName.toLowerCase()]
+        if (name) {
+          sqlQueryName.value = name
+          sql.value = `SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`
+          runSql()
+        } else {
+          sql.value = `${queryName} 未搜索到对应的结果, 请检查查询名称是否正确。`
+          ElNotification({
+            title: '分析失败',
+            message: `失败原因：${queryName} 未搜索到对应的结果, 请检查查询名称是否正确。`,
+            type: 'warning',
+            duration: 3000,
+          })
+        }
+      })
+    } catch (err) {
+      console.error('数据集映射查询请求失败：', err)
+      ElNotification({
+        title: '数据集分析查询请求失败：',
+        message: `失败原因：${err.message || '网络异常或接口错误'}`,
+        type: 'error',
+        duration: 0,
+      })
+    } finally {
+      queryLoading.value = false
+    }
   }
+ 
 })
 </script>
 
