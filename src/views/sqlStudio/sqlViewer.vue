@@ -34,23 +34,14 @@
         <el-divider content-position="left">猜你想用</el-divider>
         <div class="sql-viewer__sql-toolbar">
           <div class="sql-query-actions">
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('limitImage')">
-              image 资源查询示例
-            </el-button>
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('limitVideo')">
-              video 资源查询示例
-            </el-button>
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('limitAudio')">
-              audio 资源查询示例
-            </el-button>
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('stat')">
-              统计 Token 数分布
-            </el-button>
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('tableInfo')">
-              查询 table 结构
-            </el-button>
-            <el-button class="sql-query-action" size="small" @click="applySQLTemplate('catalog')">
-              查询 catalog 列表
+            <el-button
+              v-for="(template, key) in templates"
+              :key="key"
+              class="sql-query-action"
+              size="small"
+              @click="applySQLTemplate(key)"
+            >
+              {{ template.label }}
             </el-button>
           </div>
         </div>
@@ -96,10 +87,10 @@
 </template>
 
 <script setup>
-import { inject, reactive, ref, onMounted, nextTick } from 'vue'
+import { inject, reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { postSQLQuery } from '@/api/SQLAdaptor/index'
 import { startProcessScheduler } from '@/api/processScheduler/index'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils'
 import DatasetViewer from '@/components/DatasetViewer.vue'
 
@@ -116,29 +107,44 @@ const popoverForm = reactive({
   output: ""
 })
 const sqlExportOutputVisible = ref(false)
+const route = useRoute();
 const router = useRouter()
 
 const queryLoading = ref(false)
-const sql = ref('SELECT * FROM qianfan_bos_catalog.all_data.mantis_instruct_dreamsim_v1 LIMIT 20')
+const sqlQueryName = ref('mantis_instruct_dreamsim_v1')
+const sql = ref(`SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`)
 
-const templates = {
-  limitImage: 'SELECT * FROM qianfan_bos_catalog.all_data.mantis_instruct_dreamsim_v1 LIMIT 20',
-  limitVideo: 'SELECT * FROM qianfan_bos_catalog.all_data.sharegpt4o_video_v1 LIMIT 20',
-  limitAudio: 'SELECT * FROM qianfan_bos_catalog.all_data.sharegpt4o_audio_v1 LIMIT 20',
-  stat: `SELECT
-      CONCAT(FLOOR(conversations_tokens / 5) * 5, '-', FLOOR(conversations_tokens / 5) * 5 + 4) AS token_range,
-      COUNT(*) AS cnt
-    FROM qianfan_bos_catalog.all_data.infovqa_v1
-    GROUP BY FLOOR(conversations_tokens / 5)
-    ORDER BY FLOOR(conversations_tokens / 5)
-  `,
-  tableInfo: 'SHOW COLUMNS FROM qianfan_bos_catalog.all_data.infovqa_v1',
-  catalog: 'SHOW DATABASES'
-}
+// 动态生成 SQL 模板
+const templates = computed(() => {
+  return {
+    limitQuery: {
+      label: 'limit 查询示例',
+      sql: `SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`
+    },
+    stat: {
+      label: '统计 Token 数分布',
+      sql: `SELECT
+        CONCAT(FLOOR(conversations_tokens / 5) * 5, '-', FLOOR(conversations_tokens / 5) * 5 + 4) AS token_range,
+        COUNT(*) AS cnt
+      FROM qianfan_bos_catalog.all_data.${sqlQueryName.value}
+      GROUP BY FLOOR(conversations_tokens / 5)
+      ORDER BY FLOOR(conversations_tokens / 5)
+      `
+    },
+    tableInfo: {
+      label: '查询 table 结构',
+      sql: `SHOW COLUMNS FROM qianfan_bos_catalog.all_data.${sqlQueryName.value}`
+    },
+    catalog: {
+      label: '查询 catalog 列表',
+      sql: 'SHOW DATABASES'
+    }
+  }
+})
 
 const applySQLTemplate = (key) => {
-  if (templates[key]) {
-    sql.value = templates[key]
+  if (templates.value[key]) {
+    sql.value = templates.value[key].sql
   }
 }
 
@@ -277,6 +283,13 @@ const showAlert = () => {
 
 onMounted(() => {
   showAlert();
+  // --- 生命周期 ---
+  const name = route.query.name
+  if (name) {
+    sqlQueryName.value = name
+    sql.value = `SELECT * FROM qianfan_bos_catalog.all_data.${sqlQueryName.value} LIMIT 20`
+    runSql()
+  }
 })
 </script>
 

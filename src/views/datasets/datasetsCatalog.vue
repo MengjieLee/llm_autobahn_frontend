@@ -81,70 +81,84 @@
       <!-- 数据集列表 -->
       <el-row v-loading="catelogContentLoading" element-loading-text="🏃 努力加载中..." element-loading-custom-class="catelog-content-loading-wrapper" justify="space-between" class="catelog-content-container">
         <el-col :xs="24" :sm="24" :md="24" :lg="11" v-for="dataset in datasetList">
-          <el-card shadow="hover" @click="handleDatasetCardClicked(dataset.name)" class="dataset-card" body-class="dataset-card-body" footer-class="dataset-card-footer">
-            <template #default>
-              <el-row justify="space-between">
-                <el-col :span="11">
-                  <span class="dataset-name-multiline" :title="dataset.name">{{ dataset.name }}</span>
-                </el-col>
-                <el-col :span="11" style="display: flex; justify-content: flex-end;">
-                  <span class="dataset-tag"><el-icon style="margin-right: 4px;"><User /></el-icon>{{ dataset.registrant }}</span>
-                  <span class="dataset-tag"><el-icon style="margin-right: 4px;"><Clock /></el-icon>{{ formatDate('yyyy-MM-dd hh:mm:ss', dataset.updated_at) }}</span>
-                </el-col>
-              </el-row>
-            </template>
-            <template #footer>
-              <el-check-tag
-                v-for="stage in dataset.stages"
-                class="dataset-footer-tags"
-                :checked="isLabelChecked('stages', stage)"
-                :key="stage"
-                type="success"
-                @click.prevent.stop
-                @change="handleTagLabel('stages', filterGroup.stages,stage)"
-              >
-                {{ stage }}
-              </el-check-tag>
-              <el-divider direction="vertical" />
-              <el-popover
-                placement="bottom"
-                title="存储信息概览"
-                :width="420"
-                trigger="hover"
-              >
-                <template #reference>
-                  <el-button size="small" @click.prevent.stop class="m-2"><el-icon ><View /></el-icon>查看存储</el-button>
-                </template>
-                <template #default>
-                  <el-row justify="space-between" v-for="(datasetPath, idx) in [dataset.src_paths, dataset.media_root_dir, dataset.converted_paths, dataset.converted_preview_paths]">
-                    <el-col :span="4">
-                      <el-button text :disabled="isContentEmpty(datasetPath)" @click.prevent="handleClipboard(datasetPath)">
-                        <el-icon ><CopyDocument /></el-icon><span>{{ datasetPathLabelMap[idx] }}</span>
-                      </el-button>
-                    </el-col>
-                    <el-col :span="18">
-                      <p class="dataset-name-multiline" style="margin: 0 0 15px 0;">{{ datasetPath || '无' }}</p>
-                    </el-col>
-                  </el-row>
-                </template>
-              </el-popover>
-              <el-divider direction="vertical" />
-              <div v-for="(group,idx) in dataset.labels" :key="group.label_name" style="display: inline">
+          <div class="dataset-card-wrapper" @mouseleave="hideOverlay(dataset.name)">
+            <el-card shadow="hover" @click.stop="toggleOverlay(dataset.name)" class="dataset-card" body-class="dataset-card-body" footer-class="dataset-card-footer">
+              <template #default>
+                <el-row justify="space-between">
+                  <el-col :span="11">
+                    <span class="dataset-name-multiline" :title="dataset.name">{{ dataset.name }}</span>
+                  </el-col>
+                  <el-col :span="11" style="display: flex; justify-content: flex-end;">
+                    <span class="dataset-tag"><el-icon style="margin-right: 4px;"><User /></el-icon>{{ dataset.registrant }}</span>
+                    <span class="dataset-tag"><el-icon style="margin-right: 4px;"><Clock /></el-icon>{{ formatDate('yyyy-MM-dd hh:mm:ss', dataset.updated_at) }}</span>
+                  </el-col>
+                </el-row>
+              </template>
+              <template #footer>
                 <el-check-tag
-                  class="dataset-footer-tags dataset-labels-tag"
-                  :checked="isLabelChecked(group.label_name, val)"
-                  v-for="val in group.label_values"
-                  :key="val"
+                  v-for="stage in dataset.stages"
+                  class="dataset-footer-tags"
+                  :checked="isLabelChecked('stages', stage)"
+                  :key="stage"
                   type="success"
                   @click.prevent.stop
-                  @change="handleTagLabel('labels', group, val)"
+                  @change="handleTagLabel('stages', filterGroup.stages,stage)"
                 >
-                  {{ val }}
+                  {{ stage }}
                 </el-check-tag>
-                <!-- <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical" /> -->
+                <el-divider direction="vertical" />
+                <el-popover
+                  placement="bottom"
+                  title="存储信息概览"
+                  :width="420"
+                  trigger="hover"
+                >
+                  <template #reference>
+                    <el-button size="small" @click.prevent.stop class="m-2"><el-icon ><View /></el-icon>查看存储</el-button>
+                  </template>
+                  <template #default>
+                    <el-row justify="space-between" v-for="(datasetPath, idx) in [dataset.src_paths, dataset.media_root_dir, dataset.converted_paths, dataset.converted_preview_paths]">
+                      <el-col :span="4">
+                        <el-button text :disabled="isContentEmpty(datasetPath)" @click.prevent="handleClipboard(datasetPath)">
+                          <el-icon ><CopyDocument /></el-icon><span>{{ datasetPathLabelMap[idx] }}</span>
+                        </el-button>
+                      </el-col>
+                      <el-col :span="18">
+                        <p class="dataset-name-multiline" style="margin: 0 0 15px 0;">{{ datasetPath || '无' }}</p>
+                      </el-col>
+                    </el-row>
+                  </template>
+                </el-popover>
+                <el-divider direction="vertical" />
+                <div v-for="(group,idx) in dataset.labels" :key="group.label_name" style="display: inline">
+                  <el-check-tag
+                    class="dataset-footer-tags dataset-labels-tag"
+                    :checked="isLabelChecked(group.label_name, val)"
+                    v-for="val in group.label_values"
+                    :key="val"
+                    type="success"
+                    @click.prevent.stop
+                    @change="handleTagLabel('labels', group, val)"
+                  >
+                    {{ val }}
+                  </el-check-tag>
+                  <!-- <el-divider v-if="idx !== dataset.labels.length - 1" direction="vertical" /> -->
+                </div>
+              </template>
+            </el-card>
+            <div class="dataset-card-overlay" :class="{ 'visible': overlayVisible[dataset.name] }" @click.stop="toggleOverlay(dataset.name)">
+              <div class="overlay-buttons">
+                <el-button type="primary" size="large" @click.stop="handleQuickVisualization(dataset)">
+                  <el-icon><View /></el-icon>
+                  快速可视化
+                </el-button>
+                <el-button v-if="dataset.tables && Array.isArray(dataset.tables) && dataset.tables.length > 0" type="success" size="large" @click.stop="handleAnalysis(dataset)">
+                  <el-icon><DataAnalysis /></el-icon>
+                  SQL 分析
+                </el-button>
               </div>
-            </template>
-          </el-card>
+            </div>
+          </div>
         </el-col>
       </el-row>
     </el-col>
@@ -163,6 +177,7 @@ const allDatasetList = ref([]) // 全量数据
 const datasetList = ref([]) // 分页展示数据
 const route = useRoute();
 const router = useRouter()
+const overlayVisible = ref({}) // 记录每个数据集遮罩的显示状态
 
 const filterGroup = reactive({
   name: "",
@@ -367,6 +382,24 @@ const handleDatasetCardClicked = async (name) => {
   router.push({ path: '/datasets/detail', query: { name: name } })
 }
 
+const toggleOverlay = (datasetName) => {
+  overlayVisible.value[datasetName] = !overlayVisible.value[datasetName]
+}
+
+const hideOverlay = (datasetName) => {
+  overlayVisible.value[datasetName] = false
+}
+
+const handleQuickVisualization = (dataset) => {
+  overlayVisible.value[dataset.name] = false // 关闭遮罩
+  router.push({ path: '/datasets/detail', query: { name: dataset.name } })
+}
+
+const handleAnalysis = (dataset) => {
+  overlayVisible.value[dataset.name] = false // 关闭遮罩
+  router.push({ path: '/sqlStudio/sqlViewer', query: { name: dataset.tables[0] } })
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -448,6 +481,48 @@ const handleDatasetCardClicked = async (name) => {
   }
 }
 
+.dataset-card-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.dataset-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  cursor: pointer;
+
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .overlay-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    z-index: 11;
+
+    .el-button {
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 8px;
+      min-width: 180px;
+    }
+  }
+}
+
 :deep(.dataset-card-body) {
   padding: 12px 20px;
 }
@@ -522,9 +597,6 @@ const handleDatasetCardClicked = async (name) => {
 
 .catelog-content-container {
   margin-top: 20px;
-  .el-card {
-    margin-bottom: 20px;
-  }
 }
 
 .affix-container {
