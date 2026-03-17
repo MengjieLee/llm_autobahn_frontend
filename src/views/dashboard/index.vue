@@ -2,16 +2,21 @@
   <div class="dashboard-container">
     <PanelGroup :loading="fetchDataLoading" @directToDomain="directToDomain" :domainMatrix="domainMatrix" />
     <DatasetBarChart :loading="fetchDataLoading" :datasetsBarChartData="datasetsBarChartData"/>
+    <PlatformUsage
+      :loading="usageLoading"
+      :usageData="platformUsageData"
+      @periodChange="handleUsagePeriodChange"
+    />
   </div>
-
 </template>
 
 <script setup>
 import DatasetBarChart from '@/views/dashboard/components/DatasetBarChart.vue'
 import PanelGroup from '@/views/dashboard/components/PanelGroup.vue'
+import PlatformUsage from '@/views/dashboard/components/PlatformUsage.vue'
 import { useRouter } from 'vue-router'
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { getDatasetsMetrics, getUserMetrics } from '@/api/dashboard/index'
+import { getDatasetsMetrics, getUserMetrics, getPlatformUsageMetrics } from '@/api/dashboard/index'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -22,11 +27,23 @@ const domainMatrix = reactive({
 })
 
 const fetchDataLoading = ref(true)
+const usageLoading = ref(true)
 
 const datasetsBarChartData = ref([])
+const platformUsageData = ref({
+  period: 'day',
+  total_requests: 0,
+  active_users: [],
+  scenario_distribution: [],
+  action_distribution: [],
+  timeline: [],
+  start_date: '',
+  end_date: ''
+})
 
 onMounted(() => {
-    fetchData()
+  fetchData()
+  fetchUsageData('day')
 })
 
 const fetchData = async () => {
@@ -57,7 +74,24 @@ const fetchData = async () => {
       fetchDataLoading.value = false
     })
   }
+}
 
+const fetchUsageData = async (period) => {
+  usageLoading.value = true
+  try {
+    const response = await getPlatformUsageMetrics({ period })
+    platformUsageData.value = response.data
+  } catch (err) {
+    console.error('平台使用情况请求失败：', err)
+  } finally {
+    nextTick(() => {
+      usageLoading.value = false
+    })
+  }
+}
+
+const handleUsagePeriodChange = (period) => {
+  fetchUsageData(period)
 }
 
 const directToDomain = (domain) => {
@@ -74,7 +108,6 @@ const directToDomain = (domain) => {
     console.warn(`未知的 domain: ${domain}`);
   }
 }
-
 </script>
 
 <style lang="scss" scoped>
