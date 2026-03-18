@@ -359,8 +359,10 @@ const updateActionChart = () => {
   if (!actionChartInstance.value) return
 
   const data = (props.usageData.action_distribution || []).slice(0, 10)
-  const names = data.map(d => d.name.length > 15 ? d.name.slice(0, 15) + '...' : d.name)
-  const values = data.map(d => d.value)
+  // 先反转数据，使得最大值在最上面显示
+  const reversedData = [...data].reverse()
+  const names = reversedData.map(d => d.name.length > 15 ? d.name.slice(0, 15) + '...' : d.name)
+  const values = reversedData.map(d => d.value)
 
   actionChartInstance.value.setOption({
     tooltip: {
@@ -368,7 +370,8 @@ const updateActionChart = () => {
       axisPointer: { type: 'shadow' },
       formatter: (params) => {
         const dataIndex = params[0].dataIndex
-        const original = (props.usageData.action_distribution || [])[dataIndex]
+        // 使用反转后的数据数组来获取正确的原始名称
+        const original = reversedData[dataIndex]
         return `${original?.name || ''}<br/>次数: ${params[0].value}`
       }
     },
@@ -385,7 +388,7 @@ const updateActionChart = () => {
     },
     yAxis: {
       type: 'category',
-      data: names.reverse(),
+      data: names,
       axisLabel: {
         fontSize: 11,
         width: 100,
@@ -395,7 +398,7 @@ const updateActionChart = () => {
     series: [
       {
         type: 'bar',
-        data: values.reverse(),
+        data: values,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
             { offset: 0, color: '#36a3f7' },
