@@ -20,7 +20,7 @@
         </div>
         <div class="card-panel-description">
           <div class="card-panel-text">
-            数据 Pipeline <el-icon><Promotion /></el-icon>
+            Pipeline <el-icon><Promotion /></el-icon>
           </div>
           <CountTo :start-val="0" :end-val="domainMatrix.pipelineAmount" :duration="3200" class="card-panel-num" />
         </div>

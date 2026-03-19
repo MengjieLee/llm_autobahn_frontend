@@ -31,7 +31,7 @@ const usageLoading = ref(true)
 
 const datasetsBarChartData = ref([])
 const platformUsageData = ref({
-  period: 'day',
+  period: 'week',
   total_requests: 0,
   active_users: [],
   scenario_distribution: [],
@@ -43,7 +43,7 @@ const platformUsageData = ref({
 
 onMounted(() => {
   fetchData()
-  fetchUsageData('day')
+  fetchUsageData({ period: 'week' })
 })
 
 const fetchData = async () => {
@@ -76,10 +76,10 @@ const fetchData = async () => {
   }
 }
 
-const fetchUsageData = async (period) => {
+const fetchUsageData = async (params) => {
   usageLoading.value = true
   try {
-    const response = await getPlatformUsageMetrics({ period })
+    const response = await getPlatformUsageMetrics(params)
     platformUsageData.value = response.data
   } catch (err) {
     console.error('平台使用情况请求失败：', err)
@@ -90,8 +90,8 @@ const fetchUsageData = async (period) => {
   }
 }
 
-const handleUsagePeriodChange = (period) => {
-  fetchUsageData(period)
+const handleUsagePeriodChange = (params) => {
+  fetchUsageData(params)
 }
 
 const directToDomain = (domain) => {

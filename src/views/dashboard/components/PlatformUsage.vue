@@ -2,12 +2,27 @@
   <div class="platform-usage-container">
     <!-- 标题和周期选择 -->
     <div class="usage-header">
-      <h3 class="usage-title">(Legacy)平台使用情况</h3>
-      <el-radio-group v-model="selectedPeriod" size="small" @change="handlePeriodChange">
-        <el-radio-button value="day">日</el-radio-button>
-        <el-radio-button value="week">周</el-radio-button>
-        <el-radio-button value="month">月</el-radio-button>
-      </el-radio-group>
+      <h3 class="usage-title">平台使用情况</h3>
+      <div class="period-controls">
+        <el-radio-group v-model="selectedPeriod" size="small" @change="handlePeriodChange">
+          <el-radio-button value="week">近7天</el-radio-button>
+          <el-radio-button value="month">近1个月</el-radio-button>
+          <el-radio-button value="year">近1年</el-radio-button>
+          <el-radio-button value="all">所有</el-radio-button>
+        </el-radio-group>
+        <el-date-picker
+          v-model="customDateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          size="small"
+          value-format="YYYY-MM-DD"
+          @change="handleCustomDateChange"
+          :clearable="true"
+          style="width: 260px;"
+        />
+      </div>
     </div>
 
     <!-- 统计概览卡片 -->
@@ -118,6 +133,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, shallowRef, nextTick } from 'vue'
 import { CountTo } from 'vue3-count-to'
 import * as echarts from 'echarts'
+import dayjs from 'dayjs'
 import useChartResize from './mixins/resize'
 import 'echarts/theme/macarons'
 
@@ -129,7 +145,7 @@ const props = defineProps({
   usageData: {
     type: Object,
     default: () => ({
-      period: 'day',
+      period: 'week',
       total_requests: 0,
       active_users: [],
       scenario_distribution: [],
@@ -143,7 +159,8 @@ const props = defineProps({
 
 const emit = defineEmits(['periodChange'])
 
-const selectedPeriod = ref('day')
+const selectedPeriod = ref('week')
+const customDateRange = ref(null)
 
 // 图表实例
 const timelineChartRef = ref(null)
@@ -161,12 +178,16 @@ useChartResize(actionChartInstance)
 
 // 计算属性
 const periodLabel = computed(() => {
-  const labels = {
-    day: '最近1天',
-    week: '最近7天',
-    month: '最近30天'
+  if (customDateRange.value && customDateRange.value.length === 2) {
+    return `${customDateRange.value[0]} ~ ${customDateRange.value[1]}`
   }
-  return labels[selectedPeriod.value] || '最近1天'
+  const labels = {
+    week: '近7天',
+    month: '近1个月',
+    year: '近1年',
+    all: '所有时间'
+  }
+  return labels[selectedPeriod.value] || '近7天'
 })
 
 const topActiveUsers = computed(() => {
@@ -180,7 +201,35 @@ const maxUserCount = computed(() => {
 
 // 方法
 const handlePeriodChange = (period) => {
-  emit('periodChange', period)
+  customDateRange.value = null
+  emit('periodChange', { period })
+}
+
+const handleCustomDateChange = (val) => {
+  if (val && val.length === 2) {
+    selectedPeriod.value = ''
+    emit('periodChange', { start_date: val[0], end_date: val[1] })
+  } else {
+    // 清除日期选择器，恢复默认周期
+    selectedPeriod.value = 'week'
+    emit('periodChange', { period: 'week' })
+  }
+}
+
+const handleBarClick = (date) => {
+  if (date.length === 7) {
+    // YYYY-MM 格式 -> 该月范围
+    const start = date + '-01'
+    const endDate = dayjs(start).endOf('month').format('YYYY-MM-DD')
+    customDateRange.value = [start, endDate]
+    selectedPeriod.value = ''
+    emit('periodChange', { start_date: start, end_date: endDate })
+  } else {
+    // YYYY-MM-DD 格式 -> 单日
+    customDateRange.value = [date, date]
+    selectedPeriod.value = ''
+    emit('periodChange', { start_date: date, end_date: date })
+  }
 }
 
 const getRankClass = (index) => {
@@ -204,6 +253,14 @@ const initTimelineChart = () => {
   }
 
   timelineChartInstance.value = echarts.init(timelineChartRef.value, 'macarons')
+
+  // 注册柱体点击事件
+  timelineChartInstance.value.on('click', (params) => {
+    if (params.seriesType === 'bar') {
+      handleBarClick(params.name)
+    }
+  })
+
   updateTimelineChart()
 }
 
@@ -214,6 +271,14 @@ const updateTimelineChart = () => {
   const dates = timeline.map(t => t.date)
   const requests = timeline.map(t => t.requests)
   const users = timeline.map(t => t.unique_users)
+
+  // 根据数据量动态计算标签间隔
+  let labelInterval = 0
+  if (dates.length > 31) {
+    labelInterval = Math.floor(dates.length / 8) - 1
+  } else if (dates.length > 10) {
+    labelInterval = Math.floor(dates.length / 10) - 1
+  }
 
   timelineChartInstance.value.setOption({
     tooltip: {
@@ -235,8 +300,17 @@ const updateTimelineChart = () => {
       type: 'category',
       data: dates,
       axisLabel: {
-        rotate: dates.length > 7 ? 30 : 0,
-        fontSize: 11
+        rotate: dates.length > 10 ? 30 : 0,
+        fontSize: 11,
+        interval: labelInterval,
+        formatter: (value) => {
+          // YYYY-MM 格式保留，YYYY-MM-DD 只显示 MM-DD
+          if (value.length === 7) return value
+          return value.slice(5)
+        }
+      },
+      axisTick: {
+        alignWithLabel: true
       }
     },
     yAxis: [
@@ -258,11 +332,20 @@ const updateTimelineChart = () => {
         name: '请求数',
         type: 'bar',
         data: requests,
+        cursor: 'pointer',
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#409EFF' },
             { offset: 1, color: '#79bbff' }
           ])
+        },
+        emphasis: {
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#337ecc' },
+              { offset: 1, color: '#409EFF' }
+            ])
+          }
         }
       },
       {
@@ -433,8 +516,9 @@ watch(
 watch(
   () => props.usageData.period,
   (newPeriod) => {
-    if (newPeriod && newPeriod !== selectedPeriod.value) {
+    if (newPeriod && ['week', 'month', 'year', 'all'].includes(newPeriod) && newPeriod !== selectedPeriod.value) {
       selectedPeriod.value = newPeriod
+      customDateRange.value = null
     }
   }
 )
@@ -471,6 +555,8 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid #ebeef5;
@@ -480,6 +566,13 @@ onBeforeUnmount(() => {
     font-size: 18px;
     font-weight: 600;
     color: #303133;
+  }
+
+  .period-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 }
 
