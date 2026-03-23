@@ -74,6 +74,7 @@ export default defineConfig(({
     server: {
       port: 8735, // 自定义默认端口为 8735
       strictPort: true, // 可选：端口被占用时直接报错（默认自动换端口）
+      allowedHosts: ['vortex.n.baidu-int.com'],
     },
     css: {
       // Customizing themes with unplugin-vue-components
