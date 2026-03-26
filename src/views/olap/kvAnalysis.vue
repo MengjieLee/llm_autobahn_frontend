@@ -116,7 +116,8 @@
         </el-table-column>
         <el-table-column label="App ID" min-width="120">
           <template #default="{ row }">
-            {{ row.query?.app_id || '-' }}
+            <span v-if="row.query?.app_id">{{ row.query.app_id }}</span>
+            <span v-else class="text-muted">空</span>
           </template>
         </el-table-column>
         <el-table-column label="场景" width="120" align="center">
@@ -168,10 +169,13 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="命中率" width="100" align="center">
+        <el-table-column label="命中率" min-width="180" align="center">
           <template #default="{ row }">
-            <template v-if="row.result?.hit_rate != null">
-              <el-text type="success" tag="b">{{ (row.result.hit_rate * 100).toFixed(2) }}%</el-text>
+            <template v-if="row.result && hasModelResults(row.result)">
+              <div v-for="(info, model) in getModelResults(row.result)" :key="model" class="hit-rate-item">
+                <el-tag size="small" effect="plain" round>{{ model }}</el-tag>
+                <el-text type="success" tag="b" size="small">{{ (info.hit_rate * 100).toFixed(2) }}%</el-text>
+              </div>
             </template>
             <span v-else class="text-muted">-</span>
           </template>
@@ -229,10 +233,16 @@
           <el-descriptions-item label="查询时段">
             {{ detailTask.query?.start_datetime }} ~ {{ detailTask.query?.end_datetime }}
           </el-descriptions-item>
-          <el-descriptions-item label="App ID">{{ detailTask.query?.app_id }}</el-descriptions-item>
+          <el-descriptions-item label="App ID">
+            <span v-if="detailTask.query?.app_id">{{ detailTask.query.app_id }}</span>
+            <span v-else class="text-muted">空</span>
+          </el-descriptions-item>
           <el-descriptions-item label="场景">{{ detailTask.scenario?.label || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建人">{{ detailTask.created_by?.name || detailTask.created_by?.username || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="模型">{{ detailTask.config?.default_model }}</el-descriptions-item>
+          <el-descriptions-item label="默认模型">
+            <el-text size="small">{{ detailTask.config?.default_model }}</el-text>
+            <el-text type="info" size="small"> (tokenizer 兜底)</el-text>
+          </el-descriptions-item>
           <el-descriptions-item label="Block Size">{{ detailTask.config?.block_size }}</el-descriptions-item>
           <el-descriptions-item label="Cache Size">{{ detailTask.config?.cache_size?.toLocaleString() }}</el-descriptions-item>
           <el-descriptions-item label="创建时间 (北京)">{{ detailTask.created_at }}</el-descriptions-item>
@@ -301,6 +311,23 @@
                   </template>)
                 </template>
               </div>
+              <!-- tokenize 完成后展示实际模型分布 -->
+              <div
+                v-if="stage === 'tokenize' && getStageData(detailTask, stage)?.models?.length"
+                class="timeline-detail"
+              >
+                实际模型:
+                <el-tag
+                  v-for="m in getStageData(detailTask, stage).models"
+                  :key="m"
+                  size="small"
+                  effect="plain"
+                  round
+                  style="margin-left: 4px"
+                >
+                  {{ m }}
+                </el-tag>
+              </div>
               <!-- tokenize 各文件状态 -->
               <div
                 v-if="stage === 'tokenize' && getStageData(detailTask, stage)?.files?.length"
@@ -344,17 +371,35 @@
         </el-timeline>
 
         <!-- 结果 -->
-        <template v-if="detailTask.result && detailTask.result.hit_rate != null">
-          <el-divider>模拟结果</el-divider>
-          <el-descriptions :column="2" border size="small">
-            <el-descriptions-item label="命中率">
-              <el-text type="success" tag="b">{{ (detailTask.result.hit_rate * 100).toFixed(2) }}%</el-text>
-            </el-descriptions-item>
-            <el-descriptions-item label="命中次数">{{ detailTask.result.hit_count?.toLocaleString() }}</el-descriptions-item>
-            <el-descriptions-item label="总查询数">{{ detailTask.result.total_queries?.toLocaleString() }}</el-descriptions-item>
-            <el-descriptions-item label="总 Token 数">{{ detailTask.result.total_tokens?.toLocaleString() }}</el-descriptions-item>
-            <el-descriptions-item label="总条目数">{{ detailTask.result.total_entries?.toLocaleString() }}</el-descriptions-item>
-          </el-descriptions>
+        <template v-if="detailTask.result && hasModelResults(detailTask.result)">
+          <el-divider>模拟结果 (按模型)</el-divider>
+          <el-table :data="getModelResultList(detailTask.result)" border size="small">
+            <el-table-column label="模型" min-width="120">
+              <template #default="{ row }">
+                <el-tag size="small" effect="plain">{{ row.model }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="命中率" width="100" align="center">
+              <template #default="{ row }">
+                <template v-if="row.hit_rate != null">
+                  <el-text type="success" tag="b">{{ (row.hit_rate * 100).toFixed(2) }}%</el-text>
+                </template>
+                <el-text v-else-if="row.status === 'failed'" type="danger" size="small">失败</el-text>
+              </template>
+            </el-table-column>
+            <el-table-column label="命中次数" width="100" align="right">
+              <template #default="{ row }">{{ row.hit_count?.toLocaleString() || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="总查询数" width="100" align="right">
+              <template #default="{ row }">{{ row.total_queries?.toLocaleString() || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="总 Token" width="120" align="right">
+              <template #default="{ row }">{{ row.total_tokens?.toLocaleString() || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="切片数" width="80" align="center">
+              <template #default="{ row }">{{ row.input_files_count || '-' }}</template>
+            </el-table-column>
+          </el-table>
         </template>
 
         <!-- Fetch 结果文件 -->
@@ -561,6 +606,36 @@ const fileStatusType = (status) => {
 const fileStatusIcon = (status) => {
   const map = { completed: '完成', running: '处理中', failed: '失败', pending: '等待' }
   return map[status] || '等待'
+}
+
+/**
+ * result 是否包含 per-model 结果（新格式: { "glm-5": { hit_rate, ... }, ... }）
+ */
+const hasModelResults = (result) => {
+  if (!result) return false
+  return Object.keys(result).some(k => result[k]?.hit_rate != null || result[k]?.status === 'failed')
+}
+
+/**
+ * 提取 per-model 结果（过滤掉非 model 的字段）
+ */
+const getModelResults = (result) => {
+  if (!result) return {}
+  const out = {}
+  for (const [k, v] of Object.entries(result)) {
+    if (v && typeof v === 'object' && (v.hit_rate != null || v.status === 'failed')) {
+      out[k] = v
+    }
+  }
+  return out
+}
+
+/**
+ * 转为列表形式，供表格渲染
+ */
+const getModelResultList = (result) => {
+  const models = getModelResults(result)
+  return Object.entries(models).map(([model, info]) => ({ model, ...info }))
 }
 
 const isTaskRunning = (task) => {
@@ -1004,6 +1079,13 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.hit-rate-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 0;
 }
 
 :deep(.row-failed) {
