@@ -4,6 +4,8 @@ import axios from 'axios'
 import {
   dispatch
 } from '@/store'
+import { getPreAuthToken } from '@/store/storage'
+import { refreshPreAuthToken } from '@/utils/auth'
 
 
 // SQLWrapper 专用的请求实例
@@ -19,6 +21,10 @@ SQLWrapperService.interceptors.request.use(
     const token = dispatch.user.getToken()
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+    const preAuthToken = getPreAuthToken()
+    if (preAuthToken) {
+      config.headers['X-Zt-Auth-Token'] = preAuthToken
     }
     console.log(`SQLWrapperService config:${config}`)
     return config
@@ -63,6 +69,15 @@ SQLWrapperService.interceptors.response.use(
     }
   },
   error => {
+    // 检测 pre_auth_token 过期：后端返回 X-Zt-CORS-Auth-Failed: true
+    const corsAuthFailed = error.response?.headers?.['x-zt-cors-auth-failed']
+    if (corsAuthFailed === 'true' && !error.config._retried) {
+      error.config._retried = true
+      return refreshPreAuthToken().then(newToken => {
+        error.config.headers['X-Zt-Auth-Token'] = newToken
+        return SQLWrapperService(error.config)
+      })
+    }
     console.log('err ' + error) // for debug
     ElMessage({
       message: error.message,
@@ -86,6 +101,10 @@ autobahnBackendService.interceptors.request.use(
     const token = dispatch.user.getToken()
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+    const preAuthToken = getPreAuthToken()
+    if (preAuthToken) {
+      config.headers['X-Zt-Auth-Token'] = preAuthToken
     }
     return config
   },
@@ -128,6 +147,15 @@ autobahnBackendService.interceptors.response.use(
     }
   },
   error => {
+    // 检测 pre_auth_token 过期：后端返回 X-Zt-CORS-Auth-Failed: true
+    const corsAuthFailed = error.response?.headers?.['x-zt-cors-auth-failed']
+    if (corsAuthFailed === 'true' && !error.config._retried) {
+      error.config._retried = true
+      return refreshPreAuthToken().then(newToken => {
+        error.config.headers['X-Zt-Auth-Token'] = newToken
+        return autobahnBackendService(error.config)
+      })
+    }
     console.log('err: ' + error) // for debug
     ElMessage({
       message: error.message,

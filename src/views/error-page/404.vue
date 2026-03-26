@@ -22,14 +22,16 @@
 
 <style lang="scss" scoped>
 .wscn-http404-container {
-    transform: translate(-50%, -50%);
-    position: absolute;
-    top: 40%;
-    left: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
 }
 .wscn-http404 {
     position: relative;
     width: 1200px;
+    max-width: 100%;
     padding: 0 50px;
     overflow: hidden;
     .pic-404 {

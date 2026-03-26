@@ -20,7 +20,7 @@
         <item
           :base-path="route.path"
           :info="route"
-          v-if="!route.hidden"
+          v-if="!route.hidden && hasPermission(route)"
         />
       </template>
       
@@ -48,6 +48,15 @@ const props = defineProps({
 
 const routes = useRouter().options.routes
 const route = useRoute()
+const ctx = inject('context')
+
+// 检查路由权限：meta.requiredGroups 未配置则放行，否则用户 groups 需命中任一
+function hasPermission(route) {
+  const required = route.meta?.requiredGroups
+  if (!Array.isArray(required) || required.length === 0) return true
+  const userGroups = ctx.userInfo?.groups || []
+  return required.some(g => userGroups.includes(g))
+}
 
 const activeMenu = computed(() => {
     const { meta, path } = route

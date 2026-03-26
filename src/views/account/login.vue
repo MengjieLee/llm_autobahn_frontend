@@ -46,16 +46,18 @@ import { useRouter, useRoute } from 'vue-router'
 import { dispatch } from '@/store'
 import {
   DATA_VORTEX_LS_TOKEN_ID,
+  setPreAuthToken,
 } from '@/store/storage'
 import {
   parseJwtPayload,
-  resolveJwtFromContext,
+  resolveUserFromLogin,
   usernameToToken,
-  getUserInfoFromToken,
   setJwt,
 } from '@/utils/auth'
 import logoBaidu from '@/assets/logo_baidu.svg'
 import logoApp from '@/assets/logo.svg'
+import {fetch_token} from '@baidu/zerotrust-cross'
+
 
 const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0'
 
@@ -65,20 +67,25 @@ const route = useRoute()
 const loading = ref(false)
 const redirect = route.query.redirect || '/'
 
-// 点击“获取授权”：
+// 点击”获取授权”：
 // 1. 从当前上下文获取 JWT（由后端根据 Header: X-Zt-Authorization 注入）
 // 2. 保存 JWT 至 LocalStorage（data_vortex_jwt）
-// 3. 解析 JWT，得到 name / username
+// 3. 解析 JWT，得到 name / username / groups
 // 4. 使用 username 通过 SHA-256 生成 token（data_vortex_auth_token）
 // 5. 将 token 写入 LocalStorage，并更新全局 store
-// 6. 通过本地 mock 表（utils/auth.LOCAL_USER_CONFIG）解析出最终的 name / username / groups
-// 7. 跳转到目标页面
+// 6. 跳转到目标页面
 const handleLogin = async () => {
   try {
     loading.value = true
 
-    // 1. 从 /user/login 请求的响应 Headers 中获取 JWT
-    const jwt = await resolveJwtFromContext()
+    // 0. 获取零信任预认证 token 并存入 localStorage（供全局请求拦截器使用）
+    const pre_auth_token = await fetch_token('https://vortex-api.n.baidu-int.com/')
+    console.log('pre_auth_token', pre_auth_token)
+    setPreAuthToken(pre_auth_token)
+
+    // 1. 调用后端登录接口，获取用户信息（含 jwt、groups）
+    const loginUser = await resolveUserFromLogin()
+    const jwt = loginUser?.jwt
     if (!jwt) {
       ElMessage.error('未获取到网关提供的认证信息（X-Zt-Authorization），请联系管理员 👷🏻‍♂️ v_limengjie@baidu.com 检查配置')
       return
@@ -112,15 +119,11 @@ const handleLogin = async () => {
     localStorage.setItem(DATA_VORTEX_LS_TOKEN_ID, token)
     dispatch.user.setToken(token)
 
-    // 6. 根据 token 遍历本地 mock 文件，解析出用户信息与分组
-    let userInfo = await getUserInfoFromToken(token)
-    if (!userInfo) {
-      // 如果本地 mock 未配置该用户，则降级使用 JWT 中的信息
-      userInfo = {
-        username,
-        name,
-        groups: Array.isArray(payload.groups) ? payload.groups : [],
-      }
+    // 6. 保存用户信息（groups 取后端登录响应，最新最准确）
+    const userInfo = {
+      username,
+      name,
+      groups: Array.isArray(loginUser.groups) ? loginUser.groups : [],
     }
     dispatch.user.saveInfo(userInfo)
 	ElNotification({

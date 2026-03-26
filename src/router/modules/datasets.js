@@ -7,7 +7,8 @@ const datasets = {
   name: 'datasets',
   meta: {
     title: '数据集',
-    icon: 'datasets'
+    icon: 'datasets',
+    requiredGroups: ['groups_a', 'groups_b', 'groups_c', 'official'],
   },
   children: [
     {

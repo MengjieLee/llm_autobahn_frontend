@@ -7,7 +7,8 @@ const sqlStudio = {
   name: 'SQLStudio',
   meta: {
     title: 'SQL 工具台',
-    icon: 'sql'
+    icon: 'sql',
+    requiredGroups: ['groups_a', 'groups_b', 'groups_c', 'official'],
   },
   children: [
     {

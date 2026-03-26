@@ -1,4 +1,4 @@
-// 本地认证相关工具方法 & 配置
+// 认证相关工具方法 & 配置
 // 约定的 LocalStorage key，与后端/网关约定保持一致
 import CryptoJS from 'crypto-js'
 
@@ -7,29 +7,15 @@ import {
   DATA_VORTEX_LS_TOKEN_ID,
   getJwt,
   setJwt,
+  setPreAuthToken,
 } from '@/store/storage'
+import { refresh_token } from '@baidu/zerotrust-cross'
 
 export {
   DATA_VORTEX_LS_JWT_ID,
   DATA_VORTEX_LS_TOKEN_ID,
   getJwt,
   setJwt,
-}
-
-
-
-// 本地用户配置（mock 文件）
-// 使用 username 作为 key，方便维护；运行时通过 username 计算 token 再反查。
-// TODO: 按实际 UUAP 账号补充/修改这里的映射关系
-export const LOCAL_USER_CONFIG = {
-  'v_limengjie03': {
-    name: '李梦杰',
-    groups: ['official',],
-  },
-  'chenjieting': {
-    name: '陈捷挺',
-    groups: ['official',],
-  }
 }
 
 // 解析 JWT，返回 payload 对象
@@ -68,53 +54,43 @@ export async function usernameToToken(username) {
   return sha256Hex(username)
 }
 
-// 使用 token 遍历本地 mock 配置，解析出用户信息（name / username / groups）
-export async function getUserInfoFromToken(token) {
-  if (!token) return null
+// 刷新零信任预认证 token（防并发：多个请求同时触发时只刷新一次）
+let refreshingPromise = null
 
-  const entries = Object.entries(LOCAL_USER_CONFIG)
-  for (const [username, cfg] of entries) {
-    const candidate = await usernameToToken(username)
-    if (candidate === token) {
-      return {
-        username,
-        name: cfg.name || username,
-        groups: Array.isArray(cfg.groups) ? cfg.groups : [],
-      }
-    }
+export async function refreshPreAuthToken() {
+  if (!refreshingPromise) {
+    refreshingPromise = refresh_token('https://vortex-api.n.baidu-int.com/')
+      .then(newToken => {
+        setPreAuthToken(newToken)
+        return newToken
+      })
+      .finally(() => {
+        refreshingPromise = null
+      })
   }
-  return null
+  return refreshingPromise
 }
 
-// 从 /user/login 请求的响应 Headers 中获取 JWT
-// 该请求会自动跳转到零信任网关 UUAP，响应 Headers 中包含 X-Zt-Authorization 字段
-export async function resolveJwtFromContext() {
-  // 1. 优先从 LocalStorage 中读取（可能是之前已经获取并保存过的）
-  const stored = getJwt()
-  if (stored) {
-    return stored
-  }
-
-  // 2. 从 /user/login 响应 headers 中获取 JWT
+// 调用 /user/login 获取用户信息（含 jwt、groups 等）
+export async function resolveUserFromLogin() {
+  // 2. 从 /user/login 响应中获取用户信息
   try {
     const { login } = await import('@/api/user')
     const response = await login()
 
-    // 从响应 data 中获取 jwt
     // 注意：autobahnBackendService 拦截器已经返回 response.data
-    // 所以 response 的结构是 {code, message, data: {user: {jwt, ...}}}
+    // 所以 response 的结构是 {code, message, data: {user: {jwt, groups, ...}}}
     console.log('response', response)
-    const jwt = response?.data?.user?.jwt
-
-    if (jwt) {
-      return String(jwt)
+    const user = response?.data?.user
+    if (user) {
+      return user
     }
   } catch (error) {
-    console.error('获取 JWT 失败:', error)
-    return ''
+    console.error('获取用户信息失败:', error)
+    return null
   }
 
-  return ''
+  return null
 }
 
 

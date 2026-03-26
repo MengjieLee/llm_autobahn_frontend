@@ -2,6 +2,7 @@ const sidebarOpenedCacheKey = 'VA_sidebar_opened'
 // 统一使用 DATA_VORTEX 前缀的缓存 key，便于与后端/网关对齐
 export const DATA_VORTEX_LS_JWT_ID = 'data_vortex_jwt'
 export const DATA_VORTEX_LS_TOKEN_ID = 'data_vortex_auth_token'
+export const DATA_VORTEX_LS_PRE_AUTH_TOKEN_ID = 'data_vortex_pre_auth_token'
 
 const tokenCacheKey = DATA_VORTEX_LS_TOKEN_ID
 const themeCacheKey = 'VA_theme'
@@ -28,6 +29,37 @@ export function setJwt(jwt) {
 
 export function removeJwt() {
   return localStorage.removeItem(DATA_VORTEX_LS_JWT_ID)
+}
+
+export function getPreAuthToken() {
+  return localStorage.getItem(DATA_VORTEX_LS_PRE_AUTH_TOKEN_ID)
+}
+
+export function setPreAuthToken(token) {
+  return localStorage.setItem(DATA_VORTEX_LS_PRE_AUTH_TOKEN_ID, token)
+}
+
+export function removePreAuthToken() {
+  return localStorage.removeItem(DATA_VORTEX_LS_PRE_AUTH_TOKEN_ID)
+}
+
+const userInfoCacheKey = 'data_vortex_user_info'
+
+export function getUserInfo() {
+  try {
+    const raw = localStorage.getItem(userInfoCacheKey)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function setUserInfo(info) {
+  return localStorage.setItem(userInfoCacheKey, JSON.stringify(info))
+}
+
+export function removeUserInfo() {
+  return localStorage.removeItem(userInfoCacheKey)
 }
 
 export function getSidebarStatus() {

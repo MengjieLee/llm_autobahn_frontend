@@ -6,6 +6,7 @@ import {
 
 import datasets from './modules/datasets'
 import sqlStudio from './modules/sqlStudio'
+import olap from './modules/olap'
 
 import Layout from '@/layout/index.vue'
 import {
@@ -34,12 +35,14 @@ const router = createRouter({
           title: '首页',
           icon: 'home',
           keepAlive: true,
-          affix: true
+          affix: true,
+          // requiredGroups: ['groups_a', 'groups_b', 'groups_c', 'official'],
         }
       }, ]
     },
     datasets,
     sqlStudio,
+    olap,
     {
       path: '/about',
       component: Layout,
