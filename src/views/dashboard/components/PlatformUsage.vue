@@ -540,7 +540,6 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .platform-usage-container {
-  margin-top: 24px;
   background: #fff;
   border-radius: 8px;
   padding: 20px;

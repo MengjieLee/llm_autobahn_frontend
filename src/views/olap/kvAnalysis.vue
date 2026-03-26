@@ -270,6 +270,28 @@
               <div v-if="stage === 'fetch' && getStageData(detailTask, stage)?.total_count" class="timeline-detail">
                 总记录数: {{ getStageData(detailTask, stage).total_count.toLocaleString() }}
               </div>
+              <!-- fetch 阶段失败切片 -->
+              <div
+                v-if="stage === 'fetch' && getStageData(detailTask, stage)?.incomplete_count"
+                class="timeline-detail"
+                style="margin-top: 4px"
+              >
+                <el-text type="danger" size="small">
+                  {{ getStageData(detailTask, stage).incomplete_count }} 个切片拉取失败：
+                </el-text>
+                <div
+                  v-for="(inc, iidx) in getStageData(detailTask, stage).incomplete_files"
+                  :key="iidx"
+                  class="timeline-file-item"
+                >
+                  <el-tag type="danger" size="small" effect="plain" round>失败</el-tag>
+                  <el-text size="small">{{ inc.hour }}</el-text>
+                  <el-text size="small" type="info" style="margin-left: 4px">({{ inc.file }})</el-text>
+                  <el-text v-if="inc.error" size="small" type="danger" class="file-error">
+                    {{ inc.error.substring(0, 100) }}
+                  </el-text>
+                </div>
+              </div>
               <div v-if="stage === 'tokenize' && getStageData(detailTask, stage)?.total_lines" class="timeline-detail">
                 总行数: {{ getStageData(detailTask, stage).total_lines.toLocaleString() }}
                 <template v-if="getStageData(detailTask, stage)?.success_count != null">
@@ -511,7 +533,7 @@ const stageLabel = (currentStage) => {
     failed: '失败',
     cancelled: '已取消',
   }
-  return map[currentStage] || '等待中'
+  return map[currentStage] || currentStage || '等待中'
 }
 
 const stageStatusType = (status) => {
