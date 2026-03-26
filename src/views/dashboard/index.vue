@@ -1,12 +1,12 @@
 <template>
   <div class="dashboard-container">
-    <PanelGroup :loading="fetchDataLoading" @directToDomain="directToDomain" :domainMatrix="domainMatrix" />
-    <DatasetBarChart :loading="fetchDataLoading" :datasetsBarChartData="datasetsBarChartData"/>
     <PlatformUsage
       :loading="usageLoading"
       :usageData="platformUsageData"
       @periodChange="handleUsagePeriodChange"
     />
+    <PanelGroup :loading="fetchDataLoading" @directToDomain="directToDomain" :domainMatrix="domainMatrix" />
+    <DatasetBarChart :loading="fetchDataLoading" :datasetsBarChartData="datasetsBarChartData"/>
   </div>
 </template>
 
