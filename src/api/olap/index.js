@@ -1,6 +1,16 @@
 import { autobahnBackendService } from '@/utils/request'
 
 /**
+ * 获取可用模型列表（热加载，修改 models.json 即时生效）
+ */
+export function kvModels() {
+  return autobahnBackendService({
+    url: '/api/v1/olap/kv/models',
+    method: 'get'
+  })
+}
+
+/**
  * 获取任务列表（按创建时间降序）
  * @param {Object} [params] - 可选过滤参数 { username, task_name }
  */

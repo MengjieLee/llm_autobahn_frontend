@@ -27,6 +27,24 @@
         <el-form-item label="App ID">
           <el-input v-model="queryForm.appId" placeholder="app-3Lut8O2E" style="width: 200px" />
         </el-form-item>
+        <el-form-item label="模型过滤">
+          <el-select
+            v-model="queryForm.selectedModels"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            clearable
+            placeholder="全部模型"
+            style="width: 280px"
+          >
+            <el-option
+              v-for="m in modelOptions"
+              :key="m"
+              :label="m"
+              :value="m"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="任务名">
           <el-input v-model="queryForm.taskName" placeholder="请输入任务名" style="width: 260px" />
         </el-form-item>
@@ -137,7 +155,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="阶段进度" min-width="320">
+        <el-table-column label="阶段进度" min-width="380">
           <template #default="{ row }">
             <div class="stage-progress">
               <div v-for="stage in stageOrder" :key="stage" class="stage-item">
@@ -158,6 +176,11 @@
                     <template v-if="getStageRunningInfo(row, stage).eta">
                       / {{ getStageRunningInfo(row, stage).eta }}
                     </template>
+                  </el-text>
+                </template>
+                <template v-else-if="getStageData(row, stage)?.status === 'failed'">
+                  <el-text type="danger" size="small" class="stage-message">
+                    {{ getStageData(row, stage)?.message }}
                   </el-text>
                 </template>
                 <template v-else-if="getStageData(row, stage)?.status === 'completed'">
@@ -236,6 +259,12 @@
           <el-descriptions-item label="App ID">
             <span v-if="detailTask.query?.app_id">{{ detailTask.query.app_id }}</span>
             <span v-else class="text-muted">空</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="模型过滤">
+            <template v-if="detailTask.query?.models?.length">
+              <el-tag v-for="m in detailTask.query.models" :key="m" size="small" effect="plain" round style="margin-right: 4px">{{ m }}</el-tag>
+            </template>
+            <span v-else class="text-muted">全部模型</span>
           </el-descriptions-item>
           <el-descriptions-item label="场景">{{ detailTask.scenario?.label || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建人">{{ detailTask.created_by?.name || detailTask.created_by?.username || '-' }}</el-descriptions-item>
@@ -456,7 +485,7 @@
 
 <script setup>
 import { ref, reactive, inject, computed, onMounted, onUnmounted } from 'vue'
-import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask } from '@/api/olap/index'
+import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels } from '@/api/olap/index'
 import { InfoFilled } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -514,7 +543,11 @@ const queryForm = reactive({
   appId: '',
   taskName: `${currentUsername}-${dayjs().format('YYYYMMDDHHmmss')}`,
   scenario: '/v2/coding/chat/completions',
+  selectedModels: [],  // 多选模型过滤，空=全部
 })
+
+// 可用模型列表（从后端热加载）
+const modelOptions = ref([])
 
 // 过滤条件：默认按当前用户过滤
 const filterForm = reactive({
@@ -547,6 +580,11 @@ const querySummary = computed(() => {
     parts.push(`App ${queryForm.appId}`)
   } else if (!queryForm.scenario) {
     parts.push('App (必填)')
+  }
+  if (queryForm.selectedModels.length > 0) {
+    parts.push(`模型: ${queryForm.selectedModels.join(', ')}`)
+  } else {
+    parts.push('全部模型')
   }
   parts.push('的 KV Cache 命中率')
   return parts.join('，')
@@ -827,6 +865,9 @@ const doSubmit = async () => {
       task_name: queryForm.taskName.trim(),
       path: queryForm.scenario,
     }
+    if (queryForm.selectedModels.length > 0) {
+      params.models = queryForm.selectedModels.join(',')
+    }
     if (submitMode.value === 'scheduled' && scheduledAt.value) {
       params.scheduled_at = scheduledAt.value
     }
@@ -916,6 +957,16 @@ const handleViewDetail = (row) => {
 }
 
 // ============================================================
+// 加载可用模型列表（热加载，每次打开页面刷新）
+// ============================================================
+const loadModels = async () => {
+  try {
+    const res = await kvModels()
+    modelOptions.value = res.data || []
+  } catch { /* 静默 */ }
+}
+
+// ============================================================
 // QPD 配额查询
 // ============================================================
 const loadQpd = async () => {
@@ -952,6 +1003,7 @@ const handleCopyTaskId = async (taskId) => {
 // 生命周期
 // ============================================================
 onMounted(() => {
+  loadModels()
   loadQpd()
   loadAllTasks()
 })
@@ -1021,19 +1073,19 @@ onUnmounted(() => {
 
 .stage-progress {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .stage-item {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .stage-message {
-  max-width: 160px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
