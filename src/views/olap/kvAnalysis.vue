@@ -740,7 +740,8 @@ const formatStageDuration = (stageData) => {
 
 /**
  * 计算正在运行阶段的 ETA 信息
- * fetch/tokenize: 基于 progress (如 "3/10") 和 started_at 计算预估剩余
+ * tokenize: 优先用后端下发的 tokenize_speed(记录/秒) + remaining_records 计算
+ * fetch: 基于 progress (如 "3/10") 和 started_at 线性外推
  * simulate: 只显示已耗时
  */
 const getStageRunningInfo = (row, stage) => {
@@ -752,7 +753,16 @@ const getStageRunningInfo = (row, stage) => {
   const elapsed = (Date.now() - start.getTime()) / 1000
   const elapsedText = formatSeconds(elapsed)
 
-  // fetch / tokenize 阶段有 progress 字段 "current/total"
+  // tokenize 阶段: 优先用基于记录数的速度估算（更准确）
+  if (stage === 'tokenize' && data.tokenize_speed > 0 && data.remaining_records > 0) {
+    const remaining = data.remaining_records / data.tokenize_speed
+    return {
+      elapsed: `已耗时 ${elapsedText}`,
+      eta: `预计剩余 ${formatSeconds(remaining)}`
+    }
+  }
+
+  // fetch 阶段 / tokenize 兜底: 基于切片数线性外推
   if (data.progress) {
     const parts = data.progress.split('/')
     if (parts.length === 2) {
