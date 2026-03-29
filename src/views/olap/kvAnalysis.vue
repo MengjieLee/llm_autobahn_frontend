@@ -357,30 +357,38 @@
                   {{ m }}
                 </el-tag>
               </div>
-              <!-- tokenize 各文件状态 -->
+              <!-- tokenize 各文件状态（可折叠，默认收起） -->
               <div
                 v-if="stage === 'tokenize' && getStageData(detailTask, stage)?.files?.length"
                 class="timeline-files"
               >
-                <div
-                  v-for="(file, fidx) in getStageData(detailTask, stage).files"
-                  :key="fidx"
-                  class="timeline-file-item"
-                >
-                  <el-tag
-                    :type="fileStatusType(file.status)"
-                    size="small"
-                    effect="plain"
-                    round
-                  >
-                    {{ fileStatusIcon(file.status) }}
-                  </el-tag>
-                  <el-text size="small">{{ file.file }}</el-text>
-                  <el-text v-if="file.lines" size="small" type="info"> ({{ file.lines }} 条)</el-text>
-                  <el-text v-if="file.status === 'failed' && file.error" size="small" type="danger" class="file-error">
-                    {{ file.error.substring(0, 80) }}
+                <div class="files-toggle" @click="tokenizeFilesExpanded = !tokenizeFilesExpanded">
+                  <el-icon class="files-toggle-arrow" :class="{ 'is-expanded': tokenizeFilesExpanded }"><ArrowRight /></el-icon>
+                  <el-text size="small" type="info">
+                    {{ getStageData(detailTask, stage).files.length }} 个切片文件
                   </el-text>
                 </div>
+                <template v-if="tokenizeFilesExpanded">
+                  <div
+                    v-for="(file, fidx) in getStageData(detailTask, stage).files"
+                    :key="fidx"
+                    class="timeline-file-item"
+                  >
+                    <el-tag
+                      :type="fileStatusType(file.status)"
+                      size="small"
+                      effect="plain"
+                      round
+                    >
+                      {{ fileStatusIcon(file.status) }}
+                    </el-tag>
+                    <el-text size="small">{{ file.file }}</el-text>
+                    <el-text v-if="file.lines" size="small" type="info"> ({{ file.lines }} 条)</el-text>
+                    <el-text v-if="file.status === 'failed' && file.error" size="small" type="danger" class="file-error">
+                      {{ file.error.substring(0, 80) }}
+                    </el-text>
+                  </div>
+                </template>
               </div>
               <!-- fetch 阶段的 ETA -->
               <div
@@ -431,17 +439,34 @@
           </el-table>
         </template>
 
-        <!-- Fetch 结果文件 -->
-        <template v-if="getStageData(detailTask, 'fetch')?.result_files?.length">
-          <el-divider>数据文件 ({{ getStageData(detailTask, 'fetch').result_files.length }})</el-divider>
-          <el-table :data="getStageData(detailTask, 'fetch').result_files" border size="small" max-height="300">
-            <el-table-column label="时段" min-width="180">
-              <template #default="{ row }">{{ row.hour }}</template>
-            </el-table-column>
-            <el-table-column label="记录数" width="100" align="right">
-              <template #default="{ row }">{{ row.count?.toLocaleString() }}</template>
-            </el-table-column>
-          </el-table>
+        <!-- 数据目录树（懒加载） -->
+        <template v-if="detailTask?.task_id">
+          <el-divider>数据目录</el-divider>
+          <div
+            class="file-tree-wrapper"
+            v-loading="fileTreeLoading"
+            element-loading-text="正在扫描数据目录，数据量较大请稍候..."
+          >
+            <div class="file-tree-root-path">{{ fileTreeRootPath || '加载中...' }}</div>
+            <el-tree
+              :key="detailTask?.task_id"
+              :props="fileTreeProps"
+              :load="loadFileTree"
+              lazy
+              :expand-on-click-node="true"
+              highlight-current
+              class="file-tree"
+            >
+              <template #default="{ node, data }">
+                <span class="tree-node">
+                  <span class="tree-icon">{{ data.is_dir ? '📂' : '📄' }}</span>
+                  <span :class="data.is_dir ? 'tree-dir' : 'tree-file'">{{ data.name }}</span>
+                  <span v-if="data.size_label" class="tree-meta">{{ data.size_label }}</span>
+                  <el-icon v-if="node.loading" class="tree-spinner"><Loading /></el-icon>
+                </span>
+              </template>
+            </el-tree>
+          </div>
         </template>
       </template>
     </el-drawer>
@@ -485,8 +510,8 @@
 
 <script setup>
 import { ref, reactive, inject, computed, onMounted, onUnmounted } from 'vue'
-import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels } from '@/api/olap/index'
-import { InfoFilled } from '@element-plus/icons-vue'
+import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels, kvFileTree } from '@/api/olap/index'
+import { InfoFilled, Loading, ArrowRight } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
@@ -498,7 +523,7 @@ const currentUsername = ctx.userInfo?.username || ''
 // ============================================================
 // 常量
 // ============================================================
-const POLL_INTERVAL = 3000
+const POLL_INTERVAL = 120000  // 2 分钟
 
 const stageOrder = ['fetch', 'tokenize', 'simulate']
 const stageNames = {
@@ -561,10 +586,11 @@ const taskList = ref([])
 const pollTimers = {}
 
 // QPD 配额
-const qpdInfo = reactive({ used: 0, limit: 3, is_official: false, remaining: 3 })
+const qpdInfo = reactive({ used: 0, limit: 1, is_official: false, remaining: 1 })
 
 const detailVisible = ref(false)
 const detailTask = ref(null)
+const tokenizeFilesExpanded = ref(false)
 
 // ============================================================
 // 动态查询描述
@@ -666,6 +692,44 @@ const getModelResults = (result) => {
     }
   }
   return out
+}
+
+// ============================================================
+// 数据目录树（el-tree lazy loading）
+// ============================================================
+const fileTreeRootPath = ref('')
+const fileTreeLoading = ref(false)
+
+const fileTreeProps = {
+  label: 'name',
+  isLeaf: 'is_leaf',
+}
+
+const loadFileTree = async (node, resolve) => {
+  const taskId = detailTask.value?.task_id
+  if (!taskId) return resolve([])
+
+  // 根节点：path 为空
+  const relPath = node.level === 0 ? '' : node.data?.rel_path || ''
+
+  // 根节点加载时显示全局 loading
+  if (node.level === 0) fileTreeLoading.value = true
+
+  try {
+    const res = await kvFileTree({ task_id: taskId, path: relPath })
+    const { root, children } = res.data || {}
+
+    // 首次加载时设置根路径显示
+    if (node.level === 0 && root?.root_path) {
+      fileTreeRootPath.value = root.root_path
+    }
+
+    resolve(children || [])
+  } catch {
+    resolve([])
+  } finally {
+    if (node.level === 0) fileTreeLoading.value = false
+  }
 }
 
 /**
@@ -963,6 +1027,8 @@ const refreshAllTasks = () => {
 // ============================================================
 const handleViewDetail = (row) => {
   detailTask.value = row
+  tokenizeFilesExpanded.value = false
+  fileTreeRootPath.value = ''
   detailVisible.value = true
 }
 
@@ -1128,6 +1194,30 @@ onUnmounted(() => {
   border-left: 2px solid #e4e7ed;
 }
 
+.files-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 4px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+}
+
+.files-toggle:hover {
+  background: #f5f7fa;
+}
+
+.files-toggle-arrow {
+  font-size: 12px;
+  color: #909399;
+  transition: transform 0.2s;
+}
+
+.files-toggle-arrow.is-expanded {
+  transform: rotate(90deg);
+}
+
 .timeline-file-item {
   display: flex;
   align-items: center;
@@ -1156,5 +1246,73 @@ onUnmounted(() => {
 
 :deep(.row-running) {
   background-color: #fdf6ec !important;
+}
+
+/* 数据目录树 */
+.file-tree-wrapper {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.file-tree-root-path {
+  padding: 8px 12px;
+  background: #f5f7fa;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  color: #606266;
+  border-bottom: 1px solid #ebeef5;
+  word-break: break-all;
+}
+
+.file-tree {
+  max-height: 400px;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.file-tree :deep(.el-tree-node__content) {
+  height: 28px;
+}
+
+.tree-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.tree-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.tree-dir {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.tree-file {
+  color: #606266;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+.tree-meta {
+  margin-left: 6px;
+  color: #909399;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tree-spinner {
+  margin-left: 6px;
+  color: #409eff;
+  font-size: 12px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

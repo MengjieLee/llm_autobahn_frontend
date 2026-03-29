@@ -65,3 +65,15 @@ export function kvDeleteTask(taskId) {
     method: 'delete'
   })
 }
+
+/**
+ * 获取任务数据目录树（懒加载）
+ * @param {Object} params - { task_id, path }
+ */
+export function kvFileTree(params) {
+  return autobahnBackendService({
+    url: '/api/v1/olap/kv/file-tree',
+    method: 'get',
+    params
+  })
+}
