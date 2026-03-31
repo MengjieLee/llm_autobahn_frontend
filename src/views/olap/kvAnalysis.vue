@@ -435,34 +435,43 @@
           </el-table>
         </template>
 
-        <!-- 数据目录树（懒加载） -->
+        <!-- 数据目录树（手动触发加载） -->
         <template v-if="detailTask?.task_id">
           <el-divider>数据目录</el-divider>
-          <div
-            class="file-tree-wrapper"
-            v-loading="fileTreeLoading"
-            element-loading-text="正在扫描数据目录，数据量较大请稍候..."
-          >
-            <div class="file-tree-root-path">{{ fileTreeRootPath || '加载中...' }}</div>
-            <el-tree
-              :key="detailTask?.task_id"
-              :props="fileTreeProps"
-              :load="loadFileTree"
-              lazy
-              :expand-on-click-node="true"
-              highlight-current
-              class="file-tree"
+          <template v-if="!fileTreeVisible">
+            <div style="text-align: center; padding: 12px 0;">
+              <el-button type="primary" plain size="small" @click="fileTreeVisible = true">
+                加载数据目录
+              </el-button>
+            </div>
+          </template>
+          <template v-else>
+            <div
+              class="file-tree-wrapper"
+              v-loading="fileTreeLoading"
+              element-loading-text="正在扫描数据目录，数据量较大请稍候..."
             >
-              <template #default="{ node, data }">
-                <span class="tree-node">
-                  <span class="tree-icon">{{ data.is_dir ? '📂' : '📄' }}</span>
-                  <span :class="data.is_dir ? 'tree-dir' : 'tree-file'">{{ data.name }}</span>
-                  <span v-if="data.size_label" class="tree-meta">{{ data.size_label }}</span>
-                  <el-icon v-if="node.loading" class="tree-spinner"><Loading /></el-icon>
-                </span>
-              </template>
-            </el-tree>
-          </div>
+              <div class="file-tree-root-path">{{ fileTreeRootPath || '加载中...' }}</div>
+              <el-tree
+                :key="detailTask?.task_id"
+                :props="fileTreeProps"
+                :load="loadFileTree"
+                lazy
+                :expand-on-click-node="true"
+                highlight-current
+                class="file-tree"
+              >
+                <template #default="{ node, data }">
+                  <span class="tree-node">
+                    <span class="tree-icon">{{ data.is_dir ? '📂' : '📄' }}</span>
+                    <span :class="data.is_dir ? 'tree-dir' : 'tree-file'">{{ data.name }}</span>
+                    <span v-if="data.size_label" class="tree-meta">{{ data.size_label }}</span>
+                    <el-icon v-if="node.loading" class="tree-spinner"><Loading /></el-icon>
+                  </span>
+                </template>
+              </el-tree>
+            </div>
+          </template>
         </template>
       </template>
     </el-drawer>
@@ -695,6 +704,7 @@ const getModelResults = (result) => {
 // ============================================================
 const fileTreeRootPath = ref('')
 const fileTreeLoading = ref(false)
+const fileTreeVisible = ref(false)
 
 const fileTreeProps = {
   label: 'name',
@@ -1025,6 +1035,7 @@ const handleViewDetail = (row) => {
   detailTask.value = row
   tokenizeFilesExpanded.value = false
   fileTreeRootPath.value = ''
+  fileTreeVisible.value = false
   detailVisible.value = true
 }
 
