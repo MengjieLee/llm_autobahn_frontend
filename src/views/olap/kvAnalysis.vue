@@ -143,6 +143,16 @@
             {{ row.scenario?.label || '-' }}
           </template>
         </el-table-column>
+        <el-table-column label="模型过滤" width="150" align="center">
+          <template #default="{ row }">
+            <template v-if="row.query?.models?.length">
+              <el-tag v-for="m in row.query.models" :key="m" size="small" effect="plain" round style="margin: 2px;">
+                {{ m }}
+              </el-tag>
+            </template>
+            <span v-else class="text-muted">全部</span>
+          </template>
+        </el-table-column>
         <el-table-column label="创建人" width="120" align="center">
           <template #default="{ row }">
             {{ row.created_by?.username || row.created_by?.name || '-' }}
@@ -208,16 +218,6 @@
             {{ row.created_at || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="定时启动" width="170" align="center">
-          <template #default="{ row }">
-            <template v-if="row.scheduled_at">
-              <el-text :type="row.pipeline?.current_stage === 'scheduled' ? 'warning' : 'info'" size="small">
-                {{ row.scheduled_at }}
-              </el-text>
-            </template>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-bar">
@@ -268,10 +268,6 @@
           </el-descriptions-item>
           <el-descriptions-item label="场景">{{ detailTask.scenario?.label || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建人">{{ detailTask.created_by?.name || detailTask.created_by?.username || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="默认模型">
-            <el-text size="small">{{ detailTask.config?.default_model }}</el-text>
-            <el-text type="info" size="small"> (tokenizer 兜底)</el-text>
-          </el-descriptions-item>
           <el-descriptions-item label="Block Size">{{ detailTask.config?.block_size }}</el-descriptions-item>
           <el-descriptions-item label="Cache Size">{{ detailTask.config?.cache_size?.toLocaleString() }}</el-descriptions-item>
           <el-descriptions-item label="创建时间 (北京)">{{ detailTask.created_at }}</el-descriptions-item>
