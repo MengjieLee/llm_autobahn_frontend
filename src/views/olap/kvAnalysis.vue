@@ -610,7 +610,7 @@ const querySummary = computed(() => {
   if (queryForm.appId) {
     parts.push(`App ${queryForm.appId}`)
   } else if (!queryForm.scenario) {
-    parts.push('App (必填)')
+    parts.push('App (全局)')
   }
   if (queryForm.selectedModels.length > 0) {
     parts.push(`模型: ${queryForm.selectedModels.join(', ')}`)
@@ -911,10 +911,6 @@ const handleSubmit = () => {
   }
   if (!queryForm.taskName?.trim()) {
     ElMessage.warning('请输入任务名')
-    return
-  }
-  if (!queryForm.scenario && !queryForm.appId?.trim()) {
-    ElMessage.warning('全部场景下必须指定 App ID')
     return
   }
   // 查询结束时间不能超过当前时间
