@@ -157,19 +157,20 @@
           <div class="tc-body">
             <!-- 已完成 → 展示命中率（核心指标） -->
             <template v-if="task.pipeline?.current_stage === 'done' && task.result && hasModelResults(task.result)">
-              <div class="tc-hitrate-zone">
+              <div class="tc-hitrate-chart">
                 <div
                   v-for="(info, model) in getModelResults(task.result)"
                   :key="model"
-                  class="tc-hitrate-row"
+                  class="tc-bar-col"
                 >
-                  <span class="tc-model-label">{{ model }}</span>
-                  <span
-                    class="tc-hitrate-value"
-                    :style="{ color: hitRateColor(info.hit_rate) }"
-                  >
-                    {{ (info.hit_rate * 100).toFixed(2) }}%
-                  </span>
+                  <span class="tc-bar-pct">{{ (info.hit_rate * 100).toFixed(1) }}%</span>
+                  <div class="tc-bar-track">
+                    <div
+                      class="tc-bar-fill"
+                      :style="{ height: (info.hit_rate * 100) + '%', background: hitRateColor(info.hit_rate) }"
+                    ></div>
+                  </div>
+                  <span class="tc-bar-label" :title="model">{{ model }}</span>
                 </div>
               </div>
             </template>
@@ -730,17 +731,28 @@ const isTaskRunning = (task) => {
 // ============================================================
 
 /**
- * 命中率热力图颜色映射
- * 低 → 红色, 中 → 橙色/黄色, 高 → 绿色
+ * 命中率热力图颜色 —— 连续渐变
+ * 0% → 红(#cf222e)  50% → 黄(#d4a017)  100% → 绿(#2da44e)
  */
 const hitRateColor = (rate) => {
   if (rate == null) return '#909399'
-  const pct = rate * 100
-  if (pct >= 80) return '#2da44e'
-  if (pct >= 60) return '#57ab5a'
-  if (pct >= 40) return '#d29922'
-  if (pct >= 20) return '#e16f24'
-  return '#cf222e'
+  const t = Math.max(0, Math.min(1, rate))
+  // 三段线性插值: 红 → 橙 → 黄 → 绿
+  const stops = [
+    { p: 0,   r: 207, g: 34,  b: 46  }, // #cf222e
+    { p: 0.3, r: 225, g: 111, b: 36  }, // #e16f24
+    { p: 0.5, r: 212, g: 160, b: 23  }, // #d4a017
+    { p: 0.7, r: 87,  g: 171, b: 90  }, // #57ab5a
+    { p: 1,   r: 45,  g: 164, b: 78  }, // #2da44e
+  ]
+  let i = 0
+  while (i < stops.length - 2 && t > stops[i + 1].p) i++
+  const a = stops[i], b = stops[i + 1]
+  const f = (t - a.p) / (b.p - a.p)
+  const r = Math.round(a.r + (b.r - a.r) * f)
+  const g = Math.round(a.g + (b.g - a.g) * f)
+  const bl = Math.round(a.b + (b.b - a.b) * f)
+  return `rgb(${r},${g},${bl})`
 }
 
 /**
@@ -1202,6 +1214,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 16px 16px 12px;
+  height: 220px;
 }
 
 .task-card-item:hover {
@@ -1340,36 +1353,75 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* 命中率展示区（热力图风格） */
-.tc-hitrate-zone {
+/* 命中率柱状图 */
+.tc-hitrate-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100%;
+  padding-bottom: 18px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tc-bar-col {
+  flex: none;
+  width: calc(100% / 6);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.tc-hitrate-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: #f6f8fa;
+  gap: 2px;
+  height: 100%;
+  position: relative;
 }
 
-.tc-model-label {
-  font-size: 12px;
+.tc-bar-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #303133;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tc-bar-track {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.06) 3px,
+      rgba(0, 0, 0, 0.06) 4px
+    ),
+    #f0f1f3;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.tc-bar-fill {
+  width: 100%;
+  border-radius: 4px;
+  transition: height 0.6s ease;
+  min-height: 2px;
+}
+
+.tc-bar-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 4px;
+  font-size: 10px;
   color: #656d76;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
-
-.tc-hitrate-value {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  font-variant-numeric: tabular-nums;
+  font-style: italic;
+  transform-origin: top left;
+  transform: rotate(20deg) translateX(-16px);
 }
 
 /* 阶段进度条 */
