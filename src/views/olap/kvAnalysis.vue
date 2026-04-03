@@ -74,181 +74,155 @@
     </el-card>
 
     <!-- 任务列表 -->
-    <el-card shadow="never" class="task-card">
-      <template #header>
-        <div class="card-header">
-          <span>任务列表</span>
-          <div class="filter-bar">
-            <el-input
-              v-model="filterForm.username"
-              placeholder="按用户名过滤（空=全部）"
-              clearable
-              style="width: 200px"
-              @clear="loadAllTasks"
-              @keyup.enter="loadAllTasks"
-            />
-            <el-input
-              v-model="filterForm.taskName"
-              placeholder="按任务名过滤"
-              clearable
-              style="width: 200px"
-              @clear="loadAllTasks"
-              @keyup.enter="loadAllTasks"
-            />
-            <el-button type="primary" @click="loadAllTasks">搜索</el-button>
-            <el-button text @click="refreshAllTasks">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
+    <div class="task-list-section">
+      <div class="task-list-header">
+        <span class="task-list-title">任务列表</span>
+        <div class="filter-bar">
+          <el-input
+            v-model="filterForm.username"
+            placeholder="按用户名过滤（空=全部）"
+            clearable
+            style="width: 200px"
+            @clear="loadAllTasks"
+            @keyup.enter="loadAllTasks"
+          />
+          <el-input
+            v-model="filterForm.taskName"
+            placeholder="按任务名过滤"
+            clearable
+            style="width: 200px"
+            @clear="loadAllTasks"
+            @keyup.enter="loadAllTasks"
+          />
+          <el-button type="primary" @click="loadAllTasks">搜索</el-button>
+          <el-button text @click="refreshAllTasks">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
         </div>
-      </template>
-      <el-table
-        :data="taskList"
-        border
-        stripe
-        fit
-        v-loading="tableLoading"
-        max-height="600"
-        :row-class-name="tableRowClassName"
-      >
-        <el-table-column label="任务 ID" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">
-            <el-text size="small" truncated>{{ row.task_id }}</el-text>
-            <el-button text size="small" @click="handleCopyTaskId(row.task_id)">
-              <el-icon><CopyDocument /></el-icon>
-            </el-button>
-          </template>
-        </el-table-column>
-        <el-table-column label="任务名" min-width="160" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.task_name || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="查询时段" min-width="220">
-          <template #default="{ row }">
-            <template v-if="row.query">
-              {{ row.query.start_datetime }} ~ {{ row.query.end_datetime }}
-            </template>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="App ID" min-width="120">
-          <template #default="{ row }">
-            <span v-if="row.query?.app_id">{{ row.query.app_id }}</span>
-            <span v-else class="text-muted">空</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="场景" width="120" align="center">
-          <template #default="{ row }">
-            {{ row.scenario?.label || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="模型过滤" width="150" align="center">
-          <template #default="{ row }">
-            <template v-if="row.query?.models?.length">
-              <el-tag v-for="m in row.query.models" :key="m" size="small" effect="plain" round style="margin: 2px;">
-                {{ m }}
-              </el-tag>
-            </template>
-            <span v-else class="text-muted">全部</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建人" width="120" align="center">
-          <template #default="{ row }">
-            {{ row.created_by?.username || row.created_by?.name || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="当前阶段" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag :type="stageTagType(row.pipeline?.current_stage)" size="small">
-              {{ stageLabel(row.pipeline?.current_stage) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="阶段进度" min-width="380">
-          <template #default="{ row }">
-            <div class="stage-progress">
-              <div v-for="stage in stageOrder" :key="stage" class="stage-item">
-                <el-tag
-                  :type="stageStatusType(getStageStatus(row, stage))"
-                  size="small"
-                  effect="plain"
-                  round
-                >
-                  {{ stageNames[stage] }}
-                </el-tag>
-                <template v-if="getStageData(row, stage)?.status === 'running'">
-                  <el-text type="warning" size="small" class="stage-message">
-                    {{ getStageData(row, stage)?.message }}
-                  </el-text>
-                  <el-text v-if="getStageRunningInfo(row, stage)" type="info" size="small" class="stage-eta">
-                    {{ getStageRunningInfo(row, stage).elapsed }}
-                    <template v-if="getStageRunningInfo(row, stage).eta">
-                      / {{ getStageRunningInfo(row, stage).eta }}
-                    </template>
-                  </el-text>
-                </template>
-                <template v-else-if="getStageData(row, stage)?.status === 'failed'">
-                  <el-text type="danger" size="small" class="stage-message">
-                    {{ getStageData(row, stage)?.message }}
-                  </el-text>
-                </template>
-                <template v-else-if="getStageData(row, stage)?.status === 'completed'">
-                  <el-text type="success" size="small" class="stage-elapsed">
-                    {{ formatStageDuration(getStageData(row, stage)) }}
-                  </el-text>
-                </template>
+      </div>
+
+      <div v-loading="tableLoading" class="task-grid">
+        <div
+          v-for="task in taskList"
+          :key="task.task_id"
+          class="task-card-item"
+          :class="{ 'is-running': isTaskRunning(task), 'is-failed': task.pipeline?.current_stage === 'failed' }"
+          :style="getCardBorderStyle(task)"
+          @click="handleViewDetail(task)"
+        >
+          <!-- 水面波纹层 -->
+          <div class="ripple-layer"></div>
+          <!-- bling 光效层 -->
+          <div class="bling-layer"></div>
+
+          <!-- 阶段徽章 (45° 倾斜，右上角) -->
+          <div class="stage-ribbon" :class="'ribbon-' + (task.pipeline?.current_stage || 'pending')">
+            {{ stageLabel(task.pipeline?.current_stage) }}
+          </div>
+
+          <!-- Header -->
+          <div class="tc-header">
+            <div class="tc-header-info">
+              <div class="tc-task-name" :title="task.task_name || task.task_id">
+                {{ task.task_name || task.task_id }}
+              </div>
+              <div class="tc-initiator">
+                <el-icon size="12"><User /></el-icon>
+                {{ task.created_by?.username || task.created_by?.name || '-' }}
               </div>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="命中率" min-width="180" align="center">
-          <template #default="{ row }">
-            <template v-if="row.result && hasModelResults(row.result)">
-              <div v-for="(info, model) in getModelResults(row.result)" :key="model" class="hit-rate-item">
-                <el-tag size="small" effect="plain" round>{{ model }}</el-tag>
-                <el-text type="success" tag="b" size="small">{{ (info.hit_rate * 100).toFixed(2) }}%</el-text>
-              </div>
-            </template>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建时间 (北京)" width="170" align="center">
-          <template #default="{ row }">
-            {{ row.created_at || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" align="center" fixed="right">
-          <template #default="{ row }">
-            <div class="action-bar">
-              <el-button text type="primary" size="small" @click="handleViewDetail(row)">
-                详情
-              </el-button>
+            <div class="tc-header-actions" @click.stop>
               <el-popconfirm
-                :title="isTaskRunning(row) ? '该任务正在执行中，删除将中断任务，确定删除？' : '确定删除该任务？'"
+                :title="isTaskRunning(task) ? '该任务正在执行中，删除将中断任务，确定删除？' : '确定删除该任务？'"
                 confirm-button-text="确定"
                 cancel-button-text="取消"
-                @confirm="handleDelete(row)"
+                @confirm="handleDelete(task)"
                 width="280"
               >
                 <template #reference>
                   <el-button
                     text
-                    :type="isTaskRunning(row) ? 'danger' : 'info'"
+                    :type="isTaskRunning(task) ? 'danger' : 'info'"
                     size="small"
+                    circle
                   >
-                    删除
+                    <el-icon><Delete /></el-icon>
                   </el-button>
                 </template>
               </el-popconfirm>
             </div>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+          </div>
 
-    <!-- 详情抽屉 -->
-    <el-drawer v-model="detailVisible" title="任务详情" size="560px">
+          <!-- Body -->
+          <div class="tc-body">
+            <!-- 已完成 → 展示命中率（核心指标） -->
+            <template v-if="task.pipeline?.current_stage === 'done' && task.result && hasModelResults(task.result)">
+              <div class="tc-hitrate-zone">
+                <div
+                  v-for="(info, model) in getModelResults(task.result)"
+                  :key="model"
+                  class="tc-hitrate-row"
+                >
+                  <span class="tc-model-label">{{ model }}</span>
+                  <span
+                    class="tc-hitrate-value"
+                    :style="{ color: hitRateColor(info.hit_rate) }"
+                  >
+                    {{ (info.hit_rate * 100).toFixed(2) }}%
+                  </span>
+                </div>
+              </div>
+            </template>
+            <!-- 未完成 → 阶段进度 -->
+            <template v-else>
+              <div class="tc-stage-bar">
+                <div
+                  v-for="(stage, idx) in stageOrder"
+                  :key="stage"
+                  class="tc-stage-dot-group"
+                >
+                  <div
+                    class="tc-stage-dot"
+                    :class="'dot-' + getStageStatus(task, stage)"
+                  ></div>
+                  <span class="tc-stage-name">{{ stageNames[stage] }}</span>
+                  <div v-if="idx < stageOrder.length - 1" class="tc-stage-line" :class="{ 'line-done': getStageStatus(task, stage) === 'completed' }"></div>
+                </div>
+              </div>
+              <div v-if="getRunningStageMessage(task)" class="tc-running-msg">
+                {{ getRunningStageMessage(task) }}
+              </div>
+            </template>
+          </div>
+
+          <!-- Footer -->
+          <div class="tc-footer">
+            <span class="tc-footer-item" :title="task.query?.app_id || '全局'">
+              <el-icon size="12"><Monitor /></el-icon>
+              {{ task.query?.app_id || '全局' }}
+            </span>
+            <span class="tc-footer-item" :title="task.query ? `${task.query.start_datetime} ~ ${task.query.end_datetime}` : '-'">
+              <el-icon size="12"><Clock /></el-icon>
+              {{ formatTimeRangeShort(task) }}
+            </span>
+            <span class="tc-footer-item">
+              <el-icon size="12"><Collection /></el-icon>
+              {{ task.scenario?.label || '-' }}
+            </span>
+            <span v-if="task.query?.models?.length" class="tc-footer-item" :title="task.query.models.join(', ')">
+              <el-icon size="12"><Filter /></el-icon>
+              {{ task.query.models.length }}模型
+            </span>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <el-empty v-if="!tableLoading && taskList.length === 0" description="暂无任务" />
+      </div>
+    </div>
+
+    <!-- 详情全屏弹窗 -->
+    <el-dialog v-model="detailVisible" title="任务详情" fullscreen append-to-body>
       <template v-if="detailTask">
         <el-descriptions :column="1" border size="small">
           <el-descriptions-item label="任务 ID">{{ detailTask.task_id }}</el-descriptions-item>
@@ -474,7 +448,7 @@
           </template>
         </template>
       </template>
-    </el-drawer>
+    </el-dialog>
 
     <!-- 提交确认弹窗 -->
     <el-dialog v-model="submitConfirmVisible" title="确认提交任务" width="480" align-center>
@@ -516,7 +490,7 @@
 <script setup>
 import { ref, reactive, inject, computed, onMounted, onUnmounted } from 'vue'
 import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels, kvFileTree } from '@/api/olap/index'
-import { InfoFilled, Loading, ArrowRight } from '@element-plus/icons-vue'
+import { InfoFilled, Loading, ArrowRight, Delete, User, Monitor, Clock, Collection, Filter } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
@@ -751,10 +725,49 @@ const isTaskRunning = (task) => {
   return stage && !['done', 'failed', 'cancelled'].includes(stage)
 }
 
-const tableRowClassName = ({ row }) => {
-  if (row.pipeline?.current_stage === 'failed') return 'row-failed'
-  if (isTaskRunning(row)) return 'row-running'
-  return ''
+// ============================================================
+// 卡片辅助函数
+// ============================================================
+
+/**
+ * 命中率热力图颜色映射
+ * 低 → 红色, 中 → 橙色/黄色, 高 → 绿色
+ */
+const hitRateColor = (rate) => {
+  if (rate == null) return '#909399'
+  const pct = rate * 100
+  if (pct >= 80) return '#2da44e'
+  if (pct >= 60) return '#57ab5a'
+  if (pct >= 40) return '#d29922'
+  if (pct >= 20) return '#e16f24'
+  return '#cf222e'
+}
+
+/**
+ * 卡片左边框颜色 —— 以最高命中率做热力感
+ */
+const getCardBorderStyle = (task) => {
+  if (task.pipeline?.current_stage === 'done' && task.result && hasModelResults(task.result)) {
+    const models = getModelResults(task.result)
+    const rates = Object.values(models).map(m => m.hit_rate).filter(r => r != null)
+    if (rates.length > 0) {
+      const avg = rates.reduce((a, b) => a + b, 0) / rates.length
+      return { borderLeftColor: hitRateColor(avg) }
+    }
+  }
+  if (task.pipeline?.current_stage === 'failed') return { borderLeftColor: '#cf222e' }
+  if (isTaskRunning(task)) return { borderLeftColor: '#d29922' }
+  return {}
+}
+
+/**
+ * 短时间范围显示
+ */
+const formatTimeRangeShort = (task) => {
+  if (!task.query) return '-'
+  const s = task.query.start_datetime?.substring(5, 16) || ''
+  const e = task.query.end_datetime?.substring(5, 16) || ''
+  return `${s} ~ ${e}`
 }
 
 // ============================================================
@@ -853,6 +866,23 @@ const getStageRunningInfo = (row, stage) => {
   return { elapsed: `已耗时 ${elapsedText}`, eta: '' }
 }
 
+/**
+ * 获取正在运行阶段的信息（卡片用）
+ */
+const getRunningStageMessage = (task) => {
+  for (const stage of stageOrder) {
+    const data = getStageData(task, stage)
+    if (data?.status === 'running') {
+      const info = getStageRunningInfo(task, stage)
+      const parts = [data.message]
+      if (info?.elapsed) parts.push(info.elapsed)
+      if (info?.eta) parts.push(info.eta)
+      return parts.filter(Boolean).join(' · ')
+    }
+  }
+  return ''
+}
+
 // ============================================================
 // 轮询逻辑
 // ============================================================
@@ -865,7 +895,7 @@ const startPolling = (taskId) => {
       const data = res.data
       updateTaskInList(taskId, data)
 
-      // 如果详情抽屉打开且是当前任务，同步更新
+      // 如果详情弹窗打开且是当前任务，同步更新
       if (detailVisible.value && detailTask.value?.task_id === taskId) {
         detailTask.value = data
       }
@@ -1123,21 +1153,26 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 
-.action-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
+.text-muted {
+  color: #999;
 }
 
-.task-card {
+/* ========== 任务列表区域 ========== */
+.task-list-section {
   margin-bottom: 16px;
 }
 
-.card-header {
+.task-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
+}
+
+.task-list-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .filter-bar {
@@ -1146,40 +1181,302 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.text-muted {
-  color: #999;
+/* ========== 卡片网格 ========== */
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  min-height: 120px;
 }
 
-.stage-progress {
+/* ========== 单张任务卡片 ========== */
+.task-card-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #e4e7ed;
+  border-left: 4px solid var(--el-color-primary);
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.3s, transform 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  padding: 16px 16px 12px;
 }
 
-.stage-item {
+.task-card-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.task-card-item.is-running {
+  border-left-color: #e6a23c;
+}
+
+.task-card-item.is-failed {
+  border-left-color: #f56c6c;
+}
+
+/* --- 波纹动画层 --- */
+.ripple-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.task-card-item:hover .ripple-layer {
+  opacity: 1;
+  background: radial-gradient(circle at 50% 120%, rgba(64, 158, 255, 0.06) 0%, transparent 70%);
+  animation: ripple-wave 2s ease-in-out infinite;
+}
+
+@keyframes ripple-wave {
+  0%   { background-size: 100% 100%; }
+  50%  { background-size: 120% 120%; }
+  100% { background-size: 100% 100%; }
+}
+
+/* --- bling 光效层 --- */
+.bling-layer {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 60%
+  );
+  transition: opacity 0.3s;
+}
+
+.task-card-item:hover .bling-layer {
+  opacity: 1;
+  animation: bling-sweep 2.5s ease-in-out infinite;
+}
+
+@keyframes bling-sweep {
+  0%   { transform: translateX(-80%) translateY(-80%) rotate(0deg); }
+  100% { transform: translateX(80%) translateY(80%) rotate(0deg); }
+}
+
+/* --- 阶段徽章 ribbon --- */
+.stage-ribbon {
+  position: absolute;
+  top: 12px;
+  right: -32px;
+  width: 120px;
+  text-align: center;
+  padding: 3px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  transform: rotate(45deg);
+  z-index: 2;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ribbon-done       { background: linear-gradient(135deg, #2da44e, #3fb950); }
+.ribbon-fetch      { background: linear-gradient(135deg, #d29922, #e3b341); }
+.ribbon-tokenize   { background: linear-gradient(135deg, #d29922, #e3b341); }
+.ribbon-simulate   { background: linear-gradient(135deg, #d29922, #e3b341); }
+.ribbon-failed     { background: linear-gradient(135deg, #cf222e, #f85149); }
+.ribbon-cancelled  { background: linear-gradient(135deg, #656d76, #8b949e); }
+.ribbon-scheduled  { background: linear-gradient(135deg, #0969da, #388bfd); }
+.ribbon-pending    { background: linear-gradient(135deg, #656d76, #8b949e); }
+
+/* --- Header --- */
+.tc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+  padding-right: 48px; /* 给 ribbon 留空间 */
+}
+
+.tc-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tc-task-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2328;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.tc-initiator {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  font-size: 12px;
+  color: #656d76;
+  margin-top: 2px;
 }
 
-.stage-message {
-  max-width: 280px;
+.tc-header-actions {
+  flex-shrink: 0;
+}
+
+/* --- Body --- */
+.tc-body {
+  flex: 1;
+  min-height: 48px;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* 命中率展示区（热力图风格） */
+.tc-hitrate-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tc-hitrate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f6f8fa;
+}
+
+.tc-model-label {
+  font-size: 12px;
+  color: #656d76;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 160px;
 }
 
-.stage-eta {
+.tc-hitrate-value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 阶段进度条 */
+.tc-stage-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px 0;
+}
+
+.tc-stage-dot-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tc-stage-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid #d0d7de;
+  background: #fff;
+  transition: all 0.3s;
+}
+
+.tc-stage-dot.dot-completed {
+  border-color: #2da44e;
+  background: #2da44e;
+}
+
+.tc-stage-dot.dot-running {
+  border-color: #d29922;
+  background: #d29922;
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+.tc-stage-dot.dot-failed {
+  border-color: #cf222e;
+  background: #cf222e;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(210, 153, 34, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(210, 153, 34, 0); }
+}
+
+.tc-stage-name {
   font-size: 11px;
+  color: #656d76;
   white-space: nowrap;
 }
 
-.stage-elapsed {
+.tc-stage-line {
+  width: 20px;
+  height: 2px;
+  background: #d0d7de;
+  margin: 0 4px;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.tc-stage-line.line-done {
+  background: #2da44e;
+}
+
+.tc-running-msg {
   font-size: 11px;
+  color: #d29922;
+  margin-top: 6px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* --- Footer --- */
+.tc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+  position: relative;
+  z-index: 1;
+}
+
+.tc-footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #8b949e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* ========== 详情全屏弹窗内容布局 ========== */
+:deep(.el-dialog__body) {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 32px;
+  overflow-y: auto;
+}
+
+/* ========== 详情抽屉内容复用样式 ========== */
 .timeline-stage-title {
   font-weight: 600;
   margin-bottom: 4px;
@@ -1241,14 +1538,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   padding: 1px 0;
-}
-
-:deep(.row-failed) {
-  background-color: #fef0f0 !important;
-}
-
-:deep(.row-running) {
-  background-color: #fdf6ec !important;
 }
 
 /* 数据目录树 */
