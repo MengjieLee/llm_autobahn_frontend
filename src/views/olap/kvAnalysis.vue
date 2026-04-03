@@ -249,6 +249,44 @@
           <el-descriptions-item label="更新时间 (北京)">{{ detailTask.updated_at }}</el-descriptions-item>
         </el-descriptions>
 
+        <!-- 命中率趋势图 -->
+        <el-divider>命中率趋势</el-divider>
+        <div class="trend-chart-section">
+          <div v-if="trendLoading" class="trend-chart-placeholder">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>正在计算各时间片命中率…</span>
+          </div>
+          <div v-else-if="!trendData || trendData.length === 0" class="trend-chart-placeholder">
+            <span class="text-muted">暂无趋势数据（需 tokenize 完成后生成）</span>
+          </div>
+          <template v-else>
+            <div ref="trendChartRef" class="trend-chart-canvas"></div>
+            <!-- Grafana 风格统计图例 -->
+            <div class="trend-legend-table">
+              <div class="trend-legend-header">
+                <span class="tl-name"></span>
+                <span class="tl-stat">Mean</span>
+                <span class="tl-stat">Max</span>
+                <span class="tl-stat">Min</span>
+              </div>
+              <div
+                v-for="(s, idx) in trendData"
+                :key="s.model"
+                class="trend-legend-row"
+                :class="{ 'is-overall': s.model === '整体' }"
+              >
+                <span class="tl-name">
+                  <span class="tl-color-dot" :style="{ background: getTrendColor(s.model, idx) }"></span>
+                  {{ s.model }}
+                </span>
+                <span class="tl-stat">{{ ((s.stats?.mean || 0) * 100).toFixed(2) }}%</span>
+                <span class="tl-stat">{{ ((s.stats?.max || 0) * 100).toFixed(2) }}%</span>
+                <span class="tl-stat">{{ ((s.stats?.min || 0) * 100).toFixed(2) }}%</span>
+              </div>
+            </div>
+          </template>
+        </div>
+
         <!-- 各阶段详情 -->
         <el-divider>Pipeline 阶段</el-divider>
         <el-timeline>
@@ -489,9 +527,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, inject, computed, onMounted, onUnmounted } from 'vue'
-import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels, kvFileTree } from '@/api/olap/index'
+import { ref, reactive, inject, computed, onMounted, onUnmounted, shallowRef, nextTick, watch } from 'vue'
+import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels, kvFileTree, kvHitRateTrend } from '@/api/olap/index'
 import { InfoFilled, Loading, ArrowRight, Delete, User, Monitor, Clock, Collection, Filter } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import 'echarts/theme/macarons'
+import useChartResize from '@/views/dashboard/components/mixins/resize'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
@@ -505,11 +546,12 @@ const currentUsername = ctx.userInfo?.username || ''
 // ============================================================
 const POLL_INTERVAL = 120000  // 2 分钟
 
-const stageOrder = ['fetch', 'tokenize', 'simulate']
+const stageOrder = ['fetch', 'tokenize', 'simulate', 'trend']
 const stageNames = {
   fetch: '数据提取',
   tokenize: '序列化',
   simulate: '缓存模拟',
+  trend: '趋势计算',
 }
 
 // ============================================================
@@ -571,6 +613,13 @@ const qpdInfo = reactive({ used: 0, limit: 1, is_official: false, remaining: 1 }
 const detailVisible = ref(false)
 const detailTask = ref(null)
 const tokenizeFilesExpanded = ref(false)
+
+// 趋势图
+const trendChartRef = ref(null)
+const trendChartInstance = shallowRef(null)
+const trendLoading = ref(false)
+const trendData = ref(null)
+useChartResize(trendChartInstance)
 
 // ============================================================
 // 动态查询描述
@@ -1074,7 +1123,129 @@ const handleViewDetail = (row) => {
   tokenizeFilesExpanded.value = false
   fileTreeRootPath.value = ''
   fileTreeVisible.value = false
+  trendData.value = null
   detailVisible.value = true
+  // 趋势数据在 pipeline 的 trend 阶段预计算，done 或 trend.completed 时可读取
+  const curStage = row.pipeline?.current_stage
+  if (curStage === 'done' || row.pipeline?.stages?.trend?.status === 'completed') {
+    loadTrendData(row.task_id)
+  }
+}
+
+const loadTrendData = async (taskId) => {
+  trendLoading.value = true
+  try {
+    const res = await kvHitRateTrend(taskId)
+    const series = res.data?.series || []
+    trendData.value = series
+    await nextTick()
+    renderTrendChart(series)
+  } catch (e) {
+    console.warn('趋势数据加载失败', e)
+    trendData.value = []
+  } finally {
+    trendLoading.value = false
+  }
+}
+
+const TREND_COLORS = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#9B59B6']
+const OVERALL_COLOR = '#2d8c2d'
+
+const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+// 供模板中图例 dot 使用
+const getTrendColor = (model, idx) => {
+  if (model === '整体') return OVERALL_COLOR
+  // "整体"占据 idx=0，后面模型从 idx=1 开始，颜色索引从 0 开始
+  const colorIdx = model === '整体' ? 0 : idx - (trendData.value?.[0]?.model === '整体' ? 1 : 0)
+  return TREND_COLORS[colorIdx % TREND_COLORS.length]
+}
+
+const renderTrendChart = (series) => {
+  if (!trendChartRef.value || !series?.length) return
+
+  if (trendChartInstance.value) {
+    trendChartInstance.value.dispose()
+  }
+  trendChartInstance.value = echarts.init(trendChartRef.value, 'macarons')
+
+  // 收集所有时间标签（去重 + 排序）
+  const timeSet = new Set()
+  series.forEach(s => s.data.forEach(d => timeSet.add(d.time)))
+  const xData = [...timeSet].sort()
+
+  // 模型颜色分配（"整体"单独颜色，其余按 TREND_COLORS 顺序）
+  let modelColorIdx = 0
+  const seriesConfig = series.map((s) => {
+    const map = {}
+    s.data.forEach(d => { map[d.time] = d.hit_rate })
+    const isOverall = s.model === '整体'
+    const color = isOverall ? OVERALL_COLOR : TREND_COLORS[modelColorIdx++ % TREND_COLORS.length]
+
+    return {
+      name: s.model,
+      type: 'line',
+      smooth: true,
+      symbol: isOverall ? 'none' : 'circle',
+      symbolSize: isOverall ? 0 : 5,
+      lineStyle: {
+        width: isOverall ? 3 : 1.5,
+        type: isOverall ? 'solid' : 'solid',
+      },
+      itemStyle: { color },
+      // 仅整体线有面积填充
+      ...(isOverall ? {
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: hexToRgba(color, 0.18) },
+            { offset: 1, color: hexToRgba(color, 0.01) },
+          ])
+        },
+        z: 0,  // 绘制在底层
+      } : {
+        areaStyle: null,
+        z: 2,
+      }),
+      data: xData.map(t => map[t] != null ? +(map[t] * 100).toFixed(2) : null),
+      connectNulls: true,
+    }
+  })
+
+  trendChartInstance.value.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params) => {
+        let html = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`
+        params.forEach(p => {
+          if (p.value != null) {
+            html += `<div>${p.marker} ${p.seriesName}: <b>${p.value}%</b></div>`
+          }
+        })
+        return html
+      }
+    },
+    legend: { show: false },
+    grid: { top: 20, right: 20, bottom: 24, left: 50 },
+    xAxis: {
+      type: 'category',
+      data: xData,
+      axisLabel: { rotate: 30, fontSize: 11 },
+      boundaryGap: false,
+    },
+    yAxis: {
+      type: 'value',
+      name: '命中率 (%)',
+      min: 0,
+      max: 100,
+      axisLabel: { formatter: '{value}%' },
+    },
+    series: seriesConfig,
+  })
 }
 
 // ============================================================
@@ -1131,6 +1302,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopAllPolling()
+  if (trendChartInstance.value) {
+    trendChartInstance.value.dispose()
+    trendChartInstance.value = null
+  }
 })
 </script>
 
@@ -1526,6 +1701,81 @@ onUnmounted(() => {
   margin: 0 auto;
   padding: 20px 32px;
   overflow-y: auto;
+}
+
+/* ========== 命中率趋势图 ========== */
+.trend-chart-section {
+  margin: 0 0 8px;
+}
+.trend-chart-canvas {
+  width: 100%;
+  height: 320px;
+}
+.trend-chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 200px;
+  color: #909399;
+  font-size: 14px;
+}
+
+/* Grafana 风格统计图例 */
+.trend-legend-table {
+  border-top: 1px solid #ebeef5;
+  font-size: 12px;
+  line-height: 1;
+}
+.trend-legend-header,
+.trend-legend-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f1f3;
+}
+.trend-legend-header {
+  color: #909399;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  background: #fafafa;
+}
+.trend-legend-row:hover {
+  background: #f5f7fa;
+}
+.trend-legend-row.is-overall {
+  font-weight: 600;
+  background: #f0f9eb;
+}
+.trend-legend-row.is-overall:hover {
+  background: #e6f7e0;
+}
+.tl-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tl-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+.trend-legend-row.is-overall .tl-color-dot {
+  height: 4px;
+}
+.tl-stat {
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
 /* ========== 详情抽屉内容复用样式 ========== */

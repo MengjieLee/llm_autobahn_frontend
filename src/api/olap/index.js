@@ -67,6 +67,17 @@ export function kvDeleteTask(taskId) {
 }
 
 /**
+ * 获取按时间片的命中率趋势数据（供详情页趋势图使用）
+ * @param {string} taskId
+ */
+export function kvHitRateTrend(taskId) {
+  return autobahnBackendService({
+    url: `/api/v1/olap/kv/hit-rate-trend/${taskId}`,
+    method: 'get'
+  })
+}
+
+/**
  * 获取任务数据目录树（懒加载）
  * @param {Object} params - { task_id, path }
  */
