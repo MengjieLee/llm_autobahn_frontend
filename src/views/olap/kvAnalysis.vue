@@ -261,7 +261,7 @@
           </div>
           <template v-else>
             <div ref="trendChartRef" class="trend-chart-canvas"></div>
-            <!-- Grafana 风格统计图例 -->
+            <!-- Grafana 风格统计图例（点击行可显示/隐藏对应线） -->
             <div class="trend-legend-table">
               <div class="trend-legend-header">
                 <span class="tl-name"></span>
@@ -273,7 +273,8 @@
                 v-for="(s, idx) in trendData"
                 :key="s.model"
                 class="trend-legend-row"
-                :class="{ 'is-overall': s.model === '整体' }"
+                :class="{ 'is-overall': s.model === '整体', 'is-hidden': trendHidden[s.model] }"
+                @click="toggleTrendSeries(s.model)"
               >
                 <span class="tl-name">
                   <span class="tl-color-dot" :style="{ background: getTrendColor(s.model, idx) }"></span>
@@ -619,7 +620,19 @@ const trendChartRef = ref(null)
 const trendChartInstance = shallowRef(null)
 const trendLoading = ref(false)
 const trendData = ref(null)
+const trendHidden = reactive({})   // { modelName: true/false } 控制线的显隐
 useChartResize(trendChartInstance)
+
+// 点击图例行 → 显示/隐藏 ECharts series
+const toggleTrendSeries = (model) => {
+  trendHidden[model] = !trendHidden[model]
+  if (trendChartInstance.value) {
+    trendChartInstance.value.dispatchAction({
+      type: 'legendToggleSelect',
+      name: model,
+    })
+  }
+}
 
 // ============================================================
 // 动态查询描述
@@ -1138,18 +1151,30 @@ const loadTrendData = async (taskId) => {
     const res = await kvHitRateTrend(taskId)
     const series = res.data?.series || []
     trendData.value = series
-    await nextTick()
+    // 重置显隐状态
+    Object.keys(trendHidden).forEach(k => delete trendHidden[k])
+    trendLoading.value = false   // 先关 loading，让 v-else 分支渲染出 canvas DOM
+    await nextTick()             // 等 DOM 更新完成，trendChartRef 才可用
     renderTrendChart(series)
   } catch (e) {
     console.warn('趋势数据加载失败', e)
     trendData.value = []
-  } finally {
     trendLoading.value = false
   }
 }
 
-const TREND_COLORS = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#9B59B6']
-const OVERALL_COLOR = '#2d8c2d'
+// 8 条高对比色（色相均匀分布，色盲友好）
+const TREND_COLORS = [
+  '#2196F3', // 蓝
+  '#4CAF50', // 绿
+  '#FF9800', // 橙
+  '#E91E63', // 玫红
+  '#00BCD4', // 青
+  '#FF5722', // 红橙
+  '#8BC34A', // 黄绿
+  '#795548', // 棕
+]
+const OVERALL_COLOR = '#7B1FA2' // 紫色（整体专用）
 
 const hexToRgba = (hex, alpha) => {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -1179,7 +1204,7 @@ const renderTrendChart = (series) => {
   series.forEach(s => s.data.forEach(d => timeSet.add(d.time)))
   const xData = [...timeSet].sort()
 
-  // 模型颜色分配（"整体"单独颜色，其余按 TREND_COLORS 顺序）
+  // 模型颜色分配（"整体"= 紫色加粗，其余按 TREND_COLORS 顺序）
   let modelColorIdx = 0
   const seriesConfig = series.map((s) => {
     const map = {}
@@ -1192,25 +1217,16 @@ const renderTrendChart = (series) => {
       type: 'line',
       smooth: true,
       symbol: isOverall ? 'none' : 'circle',
-      symbolSize: isOverall ? 0 : 5,
-      lineStyle: {
-        width: isOverall ? 3 : 1.5,
-        type: isOverall ? 'solid' : 'solid',
-      },
+      symbolSize: isOverall ? 0 : 4,
+      lineStyle: { width: isOverall ? 3.5 : 1.5 },
       itemStyle: { color },
-      // 仅整体线有面积填充
-      ...(isOverall ? {
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: hexToRgba(color, 0.18) },
-            { offset: 1, color: hexToRgba(color, 0.01) },
-          ])
-        },
-        z: 0,  // 绘制在底层
-      } : {
-        areaStyle: null,
-        z: 2,
-      }),
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: hexToRgba(color, isOverall ? 0.22 : 0.12) },
+          { offset: 1, color: hexToRgba(color, 0.01) },
+        ])
+      },
+      z: isOverall ? 0 : 2,
       data: xData.map(t => map[t] != null ? +(map[t] * 100).toFixed(2) : null),
       connectNulls: true,
     }
@@ -1229,7 +1245,7 @@ const renderTrendChart = (series) => {
         return html
       }
     },
-    legend: { show: false },
+    legend: { show: false, selected: {} },  // 不可见但保留 toggle 功能
     grid: { top: 20, right: 20, bottom: 24, left: 50 },
     xAxis: {
       type: 'category',
@@ -1744,12 +1760,22 @@ onUnmounted(() => {
 .trend-legend-row:hover {
   background: #f5f7fa;
 }
+.trend-legend-row {
+  cursor: pointer;
+  user-select: none;
+}
+.trend-legend-row.is-hidden {
+  opacity: 0.38;
+}
+.trend-legend-row.is-hidden .tl-color-dot {
+  background: #c0c4cc !important;
+}
 .trend-legend-row.is-overall {
   font-weight: 600;
-  background: #f0f9eb;
+  background: #f3e5f5;
 }
 .trend-legend-row.is-overall:hover {
-  background: #e6f7e0;
+  background: #e1bee7;
 }
 .tl-name {
   flex: 1;
