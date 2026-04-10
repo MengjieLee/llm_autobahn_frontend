@@ -367,38 +367,12 @@
                   {{ m }}
                 </el-tag>
               </div>
-              <!-- tokenize 各文件状态（可折叠，默认收起） -->
+              <!-- tokenize 文件数量 -->
               <div
                 v-if="stage === 'tokenize' && getStageData(detailTask, stage)?.files?.length"
-                class="timeline-files"
+                class="timeline-detail"
               >
-                <div class="files-toggle" @click="tokenizeFilesExpanded = !tokenizeFilesExpanded">
-                  <el-icon class="files-toggle-arrow" :class="{ 'is-expanded': tokenizeFilesExpanded }"><ArrowRight /></el-icon>
-                  <el-text size="small" type="info">
-                    {{ getStageData(detailTask, stage).files.length }} 个切片文件
-                  </el-text>
-                </div>
-                <template v-if="tokenizeFilesExpanded">
-                  <div
-                    v-for="(file, fidx) in getStageData(detailTask, stage).files"
-                    :key="fidx"
-                    class="timeline-file-item"
-                  >
-                    <el-tag
-                      :type="fileStatusType(file.status)"
-                      size="small"
-                      effect="plain"
-                      round
-                    >
-                      {{ fileStatusIcon(file.status) }}
-                    </el-tag>
-                    <el-text size="small">{{ file.file }}</el-text>
-                    <el-text v-if="file.lines" size="small" type="info"> ({{ file.lines }} 条)</el-text>
-                    <el-text v-if="file.status === 'failed' && file.error" size="small" type="danger" class="file-error">
-                      {{ file.error.substring(0, 80) }}
-                    </el-text>
-                  </div>
-                </template>
+                切片文件: {{ getStageData(detailTask, stage).files.length }} 个
               </div>
               <!-- fetch 阶段的 ETA -->
               <div
@@ -613,7 +587,6 @@ const qpdInfo = reactive({ used: 0, limit: 1, is_official: false, remaining: 1 }
 
 const detailVisible = ref(false)
 const detailTask = ref(null)
-const tokenizeFilesExpanded = ref(false)
 
 // 趋势图
 const trendChartRef = ref(null)
@@ -1133,7 +1106,6 @@ const refreshAllTasks = () => {
 // ============================================================
 const handleViewDetail = (row) => {
   detailTask.value = row
-  tokenizeFilesExpanded.value = false
   fileTreeRootPath.value = ''
   fileTreeVisible.value = false
   trendData.value = null
@@ -1149,7 +1121,7 @@ const loadTrendData = async (taskId) => {
   trendLoading.value = true
   try {
     const res = await kvHitRateTrend(taskId)
-    const series = res.data?.series || []
+    const series = enrichTrendSeries(res.data?.series || [])
     trendData.value = series
     // 重置显隐状态
     Object.keys(trendHidden).forEach(k => delete trendHidden[k])
@@ -1163,6 +1135,59 @@ const loadTrendData = async (taskId) => {
   }
 }
 
+/**
+ * 兼容旧数据：实时补算 stats（mean/max/min）和"整体"维度
+ */
+const enrichTrendSeries = (series) => {
+  if (!series.length) return series
+
+  // 1. 补算每个 series 的 stats
+  for (const s of series) {
+    if (s.stats?.mean != null) continue
+    const rates = s.data.map(d => d.hit_rate).filter(v => v != null)
+    if (!rates.length) { s.stats = { mean: 0, max: 0, min: 0 }; continue }
+    s.stats = {
+      mean: +(rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(4),
+      max: +Math.max(...rates).toFixed(4),
+      min: +Math.min(...rates).toFixed(4),
+    }
+  }
+
+  // 2. 补算"整体"维度
+  const hasOverall = series.some(s => s.model === '整体')
+  if (!hasOverall) {
+    const models = series.filter(s => s.model !== '整体')
+    if (models.length) {
+      const timeRates = {}
+      for (const m of models) {
+        for (const d of m.data) {
+          if (d.hit_rate != null) {
+            (timeRates[d.time] ??= []).push(d.hit_rate)
+          }
+        }
+      }
+      const overallData = Object.entries(timeRates)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([time, rates]) => ({ time, hit_rate: +(rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(4) }))
+
+      if (overallData.length) {
+        const rates = overallData.map(d => d.hit_rate)
+        series.unshift({
+          model: '整体',
+          data: overallData,
+          stats: {
+            mean: +(rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(4),
+            max: +Math.max(...rates).toFixed(4),
+            min: +Math.min(...rates).toFixed(4),
+          },
+        })
+      }
+    }
+  }
+
+  return series
+}
+
 // 8 条高对比色（色相均匀分布，色盲友好）
 const TREND_COLORS = [
   '#2196F3', // 蓝
@@ -1174,7 +1199,7 @@ const TREND_COLORS = [
   '#8BC34A', // 黄绿
   '#795548', // 棕
 ]
-const OVERALL_COLOR = '#7B1FA2' // 紫色（整体专用）
+const OVERALL_COLOR = '#16a34a' // 绿色（整体专用）
 
 const hexToRgba = (hex, alpha) => {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -1218,7 +1243,7 @@ const renderTrendChart = (series) => {
       smooth: true,
       symbol: isOverall ? 'none' : 'circle',
       symbolSize: isOverall ? 0 : 4,
-      lineStyle: { width: isOverall ? 3.5 : 1.5 },
+      lineStyle: { width: isOverall ? 2 : 1 },
       itemStyle: { color },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -1713,7 +1738,7 @@ onUnmounted(() => {
 
 /* ========== 详情全屏弹窗内容布局 ========== */
 :deep(.el-dialog__body) {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px 32px;
   overflow-y: auto;
@@ -1725,7 +1750,7 @@ onUnmounted(() => {
 }
 .trend-chart-canvas {
   width: 100%;
-  height: 320px;
+  height: 380px;
 }
 .trend-chart-placeholder {
   display: flex;
@@ -1772,10 +1797,10 @@ onUnmounted(() => {
 }
 .trend-legend-row.is-overall {
   font-weight: 600;
-  background: #f3e5f5;
+  background: #e8f5e9;
 }
 .trend-legend-row.is-overall:hover {
-  background: #e1bee7;
+  background: #c8e6c9;
 }
 .tl-name {
   flex: 1;

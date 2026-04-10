@@ -1,22 +1,32 @@
 import Layout from '@/layout/index.vue'
-import { DataAnalysis } from '@element-plus/icons-vue'
+import { DataAnalysis, TrendCharts } from '@element-plus/icons-vue'
 
 const olap = {
   path: '/olap',
   component: Layout,
-  redirect: '/olap/kv',
+  redirect: '/olap/dashboard',
   name: 'olap',
   meta: {
     title: 'OLAP 分析',
-    icon: DataAnalysis
+    icon: DataAnalysis,
+    alwaysShow: true,
   },
   children: [
     {
-      path: 'kv',
-      component: () => import('@/views/olap/kvAnalysis.vue'),
-      name: 'KvAnalysis',
+      path: 'dashboard',
+      component: () => import('@/views/olap/dashboard.vue'),
+      name: 'OlapDashboard',
       meta: {
-        title: 'KV Cache 分析',
+        title: 'Dashboard',
+        icon: TrendCharts,
+      }
+    },
+    {
+      path: 'discovery',
+      component: () => import('@/views/olap/kvAnalysis.vue'),
+      name: 'KvDiscovery',
+      meta: {
+        title: 'Discovery',
         icon: DataAnalysis
       }
     }

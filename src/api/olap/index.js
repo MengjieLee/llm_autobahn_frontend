@@ -1,6 +1,18 @@
 import { autobahnBackendService } from '@/utils/request'
 
 /**
+ * 获取命中率趋势数据（Dashboard 页面）
+ * @param {string} [timeRange='1d'] - 时间范围: 1h, 6h, 1d, 7d, 30d
+ */
+export function kvDashboard(timeRange = '1d') {
+  return autobahnBackendService({
+    url: '/api/v1/olap/kv/dashboard',
+    method: 'get',
+    params: { time_range: timeRange }
+  })
+}
+
+/**
  * 获取可用模型列表（热加载，修改 models.json 即时生效）
  */
 export function kvModels() {
@@ -86,5 +98,27 @@ export function kvFileTree(params) {
     url: '/api/v1/olap/kv/file-tree',
     method: 'get',
     params
+  })
+}
+
+/**
+ * 获取全场景实时命中率趋势（常驻 Worker 产出）
+ * @param {string} [timeRange='1h'] - 时间范围: 1h, 6h, 1d, 7d, 30d
+ */
+export function kvRealtime(timeRange = '1h') {
+  return autobahnBackendService({
+    url: '/api/v1/olap/kv/realtime',
+    method: 'get',
+    params: { time_range: timeRange }
+  })
+}
+
+/**
+ * 获取实时 Worker 存活状态
+ */
+export function kvRealtimeStatus() {
+  return autobahnBackendService({
+    url: '/api/v1/olap/kv/realtime/status',
+    method: 'get'
   })
 }
