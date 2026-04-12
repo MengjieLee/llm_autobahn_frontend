@@ -132,8 +132,8 @@ import { kvDashboard, kvRealtime, kvRealtimeStatus } from '@/api/olap'
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const TREND_COLORS = [
-  '#2196F3', '#4CAF50', '#FF9800', '#E91E63',
-  '#00BCD4', '#FF5722', '#8BC34A', '#795548',
+  '#3B82F6', '#A855F7', '#F97316', '#EC4899',
+  '#06B6D4', '#EF4444', '#6366F1', '#78716C',
 ]
 const OVERALL_COLOR = '#16a34a'
 
