@@ -31,7 +31,7 @@
       <!-- <Item :icon="item.meta.icon" :title="item.meta.title" /> -->
     </template>
     <item :base-path="resolvePath(child.path)" :is-nest="true" :info="child" :key="child.path" class="nest-menu"
-      v-for="child in info.children" />
+      v-for="child in showingChildren" />
   </el-sub-menu>
 </template>
 

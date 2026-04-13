@@ -22,12 +22,23 @@ const olap = {
       }
     },
     {
-      path: 'discovery/:taskId?',
+      path: 'discovery',
       component: () => import('@/views/olap/kvAnalysis.vue'),
       name: 'KvDiscovery',
       meta: {
         title: 'Discovery',
         icon: DataAnalysis
+      }
+    },
+    {
+      path: 'discovery/:taskId',
+      component: () => import('@/views/olap/kvAnalysis.vue'),
+      name: 'KvDiscoveryDetail',
+      meta: {
+        title: 'Discovery',
+        icon: DataAnalysis,
+        hidden: true,
+        activeMenu: '/olap/discovery'
       }
     }
   ]
