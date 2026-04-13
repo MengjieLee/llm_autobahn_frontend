@@ -22,7 +22,7 @@ const olap = {
       }
     },
     {
-      path: 'discovery',
+      path: 'discovery/:taskId?',
       component: () => import('@/views/olap/kvAnalysis.vue'),
       name: 'KvDiscovery',
       meta: {

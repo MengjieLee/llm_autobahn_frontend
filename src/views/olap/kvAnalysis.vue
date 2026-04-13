@@ -503,6 +503,7 @@
 
 <script setup>
 import { ref, reactive, inject, computed, onMounted, onUnmounted, shallowRef, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { kvTaskList, kvFetch, kvStatus, kvQpd, kvDeleteTask, kvModels, kvFileTree, kvHitRateTrend } from '@/api/olap/index'
 import { InfoFilled, Loading, ArrowRight, Delete, User, Monitor, Clock, Collection, Filter } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -1335,10 +1336,31 @@ const handleCopyTaskId = async (taskId) => {
 // ============================================================
 // 生命周期
 // ============================================================
+const route = useRoute()
+
+const openTaskDetail = async (taskId) => {
+  try {
+    const res = await kvStatus(taskId)
+    const task = res.data
+    if (task?.task_id) {
+      handleViewDetail(task)
+    } else {
+      ElNotification({ title: '任务未找到', message: `taskId: ${taskId}`, type: 'warning' })
+    }
+  } catch (err) {
+    ElNotification({ title: '加载任务失败', message: err.message || String(err), type: 'error' })
+  }
+}
+
 onMounted(() => {
   loadModels()
   loadQpd()
   loadAllTasks()
+  // URL 带 taskId 时自动打开详情
+  const taskId = route.params.taskId
+  if (taskId) {
+    openTaskDetail(taskId)
+  }
 })
 
 onUnmounted(() => {
