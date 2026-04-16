@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://github.com/chocho-1115/vue-admin" target="_blank">
+    <a href="https://github.com/MengjieLee/llm_autobahn_frontend" target="_blank">
         <img src="https://cn.vuejs.org/images/logo.png" width="100">
     </a>
 </p>
@@ -22,7 +22,7 @@
     <a href="https://github.com/faker-js/faker">
         <img src="https://img.shields.io/badge/faker-9.7.0-brightgreen.svg">
     </a>
-    <a href="https://github.com/chocho-1115/vue-admin">
+    <a href="https://github.com/MengjieLee/llm_autobahn_frontend">
         <img src="https://img.shields.io/badge/license-MIT-brightgreen.svg">
     </a>
 </p>
@@ -71,9 +71,3 @@ npm install
 # 启动服务
 npm run dev
 ```
-
-## License
-
-[MIT](https://github.com/chocho-1115/vue-admin/blob/main/LICENSE)
-
-Copyright (c) 2025 chocho-1115

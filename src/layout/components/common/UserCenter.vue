@@ -11,8 +11,9 @@
     </div>
     <template v-slot:dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item command="PersonalCenter">Personal Center</el-dropdown-item>
-        <el-dropdown-item command="Notification">Notification</el-dropdown-item>
+        <el-dropdown-item command="CopyToken">🔑 Copy Token ✨</el-dropdown-item>
+        <!-- <el-dropdown-item command="PersonalCenter">Personal Center</el-dropdown-item>
+        <el-dropdown-item command="Notification">Notification</el-dropdown-item> -->
         
         <el-dropdown-item command="Home" divided>Home</el-dropdown-item>
         <el-dropdown-item command="Github">Github</el-dropdown-item>
@@ -57,7 +58,18 @@ const handleCommand = (command) => {
   if(command == 'Home'){
     router.push('/')
   }else if(command == 'Github'){
-    window.open('https://github.com/chocho-1115/vue-admin', '_blank')
+    window.open('https://github.com/MengjieLee/llm_autobahn_frontend', '_blank')
+  }else if(command == 'CopyToken'){
+    const token = dispatch.user.getToken()
+    if(token){
+      navigator.clipboard.writeText(token).then(() => {
+        ElMessage.success('Token 已复制到剪贴板')
+      }).catch(() => {
+        ElMessage.error('复制失败')
+      })
+    }else{
+      ElMessage.warning('未获取到 Token')
+    }
   }else if(command == 'LogOut'){
     onLogout()
   }else{
