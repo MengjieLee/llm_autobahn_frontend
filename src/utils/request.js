@@ -39,6 +39,16 @@ SQLWrapperService.interceptors.request.use(
 SQLWrapperService.interceptors.response.use(
   response => {
     // console.log(response)
+    const corsAuthFailed = response?.headers?.['x-zt-cors-auth-failed']
+    if (corsAuthFailed === 'true' && !response.config._retried) {
+      response.config._retried = true
+      console.log(`百度零信任预检token结果:${corsAuthFailed}, 尝试刷新:${response.config._retried}`)
+      return refreshPreAuthToken().then(newToken => {
+        response.config.headers['X-Zt-Auth-Token'] = newToken
+        dispatch.user.removeToken()
+        location.reload()
+      })
+    }
     const res = response.data
 
     // if the custom err_code is not 20000, it is judged as an error.
@@ -117,6 +127,16 @@ autobahnBackendService.interceptors.request.use(
 // autobahnBackend 响应拦截器
 autobahnBackendService.interceptors.response.use(
   response => {
+    const corsAuthFailed = response?.headers?.['x-zt-cors-auth-failed']
+    if (corsAuthFailed === 'true' && !response.config._retried) {
+      response.config._retried = true
+      console.log(`百度零信任预检token结果:${corsAuthFailed}, 尝试刷新:${response.config._retried}`)
+      return refreshPreAuthToken().then(newToken => {
+        response.config.headers['X-Zt-Auth-Token'] = newToken
+        dispatch.user.removeToken()
+        location.reload()
+      })
+    }
     const res = response.data
 
     // if the custom err_code is not 20000, it is judged as an error.

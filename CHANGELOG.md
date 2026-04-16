@@ -10,6 +10,7 @@ title: 变更记录
 * 数据 pipeline | TBD
 
 ### 更新记录
+* v0.4.0 | feat(admin): 支持失效token自检修复和对齐线上kv理论命中逻辑 | 2026-04-16 | 李梦杰
 * v0.2.7 | feat(olap_discovery): 支持详情页日报推送 | 2026-04-13 | 李梦杰
 * v0.2.6 | feat(olap_dashboard): 新增 olap 仪表盘 | 2026-04-10 | 李梦杰
 * v0.2.5 | feat(olap): 支持分钟级命中趋势 | 2026-04-03 | 李梦杰
