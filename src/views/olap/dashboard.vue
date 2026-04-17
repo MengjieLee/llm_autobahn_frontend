@@ -59,6 +59,7 @@
           <div v-if="getLegendRows(scenario).length" class="trend-legend-table">
             <div class="trend-legend-header">
               <span class="tl-name"></span>
+              <span class="tl-stat">Last</span>
               <span class="tl-stat">Mean</span>
               <span class="tl-stat">Max</span>
               <span class="tl-stat">Min</span>
@@ -76,6 +77,7 @@
                 <span class="tl-color-dot" :style="{ background: row.color }"></span>
                 {{ row.name }}
               </span>
+              <span class="tl-stat">{{ row.stats.last }}%</span>
               <span class="tl-stat">{{ row.stats.mean }}%</span>
               <span class="tl-stat">{{ row.stats.max }}%</span>
               <span class="tl-stat">{{ row.stats.min }}%</span>
