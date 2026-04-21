@@ -23,8 +23,9 @@ export function kvModels() {
 }
 
 /**
- * 获取任务列表（按创建时间降序）
- * @param {Object} [params] - 可选过滤参数 { username, task_name }
+ * 获取任务列表（分页，按创建时间降序）
+ * @param {Object} [params] - 过滤参数 { username, task_name, status, page, page_size }
+ * @returns {Promise<{ items: Array, total: number, page: number, page_size: number }>}
  */
 export function kvTaskList(params) {
   return autobahnBackendService({

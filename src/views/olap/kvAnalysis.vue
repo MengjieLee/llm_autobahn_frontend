@@ -83,18 +83,31 @@
             placeholder="按用户名过滤（空=全部）"
             clearable
             style="width: 200px"
-            @clear="loadAllTasks"
-            @keyup.enter="loadAllTasks"
+            @clear="handleFilterChange"
+            @keyup.enter="handleFilterChange"
           />
           <el-input
             v-model="filterForm.taskName"
             placeholder="按任务名过滤"
             clearable
             style="width: 200px"
-            @clear="loadAllTasks"
-            @keyup.enter="loadAllTasks"
+            @clear="handleFilterChange"
+            @keyup.enter="handleFilterChange"
           />
-          <el-button type="primary" @click="loadAllTasks">搜索</el-button>
+          <el-select
+            v-model="filterForm.status"
+            placeholder="任务状态"
+            clearable
+            style="width: 140px"
+            @change="handleFilterChange"
+          >
+            <el-option label="运行中" value="running" />
+            <el-option label="已完成" value="done" />
+            <el-option label="失败" value="failed" />
+            <el-option label="已取消" value="cancelled" />
+            <el-option label="已调度" value="scheduled" />
+          </el-select>
+          <el-button type="primary" @click="handleFilterChange">搜索</el-button>
           <el-button text @click="refreshAllTasks">
             <el-icon><Refresh /></el-icon>
           </el-button>
@@ -219,6 +232,19 @@
 
         <!-- 空状态 -->
         <el-empty v-if="!tableLoading && taskList.length === 0" description="暂无任务" />
+      </div>
+      <!-- 分页 -->
+      <div v-if="taskTotal > 0" class="task-pagination">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          :total="taskTotal"
+          :page-sizes="[20, 40, 60, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="loadAllTasks"
+          @size-change="handlePageSizeChange"
+        />
       </div>
     </div>
 
@@ -576,11 +602,14 @@ const modelOptions = ref([])
 const filterForm = reactive({
   username: currentUsername,
   taskName: '',
+  status: '',
 })
 
 const submitLoading = ref(false)
 const tableLoading = ref(false)
 const taskList = ref([])
+const taskTotal = ref(0)
+const pagination = reactive({ page: 1, pageSize: 20 })
 const pollTimers = {}
 
 // QPD 配额
@@ -1069,7 +1098,7 @@ const handleDelete = async (row) => {
 }
 
 // ============================================================
-// 加载任务列表（从后端 /kv/tasks）
+// 加载任务列表（从后端 /kv/tasks，分页）
 // ============================================================
 const loadAllTasks = async () => {
   tableLoading.value = true
@@ -1077,8 +1106,13 @@ const loadAllTasks = async () => {
     const res = await kvTaskList({
       username: filterForm.username || undefined,
       task_name: filterForm.taskName || undefined,
+      status: filterForm.status || undefined,
+      page: pagination.page,
+      page_size: pagination.pageSize,
     })
-    taskList.value = res.data || []
+    const payload = res.data || {}
+    taskList.value = payload.items || []
+    taskTotal.value = payload.total || 0
 
     // 对 running 任务启动轮询
     taskList.value.forEach((t) => {
@@ -1095,6 +1129,18 @@ const loadAllTasks = async () => {
   } finally {
     tableLoading.value = false
   }
+}
+
+// 过滤条件变化时重置到第一页
+const handleFilterChange = () => {
+  pagination.page = 1
+  loadAllTasks()
+}
+
+// 每页条数变化时重置到第一页
+const handlePageSizeChange = () => {
+  pagination.page = 1
+  loadAllTasks()
 }
 
 const refreshAllTasks = () => {
@@ -1437,6 +1483,13 @@ onUnmounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
   min-height: 120px;
+}
+
+.task-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 8px 0;
 }
 
 /* ========== 单张任务卡片 ========== */
