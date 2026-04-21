@@ -101,7 +101,7 @@ SQLWrapperService.interceptors.response.use(
 // autobahnBackend 专用的请求实例
 const autobahnBackendService = axios.create({
   baseURL: import.meta.env.VITE_AUTOBAHN_BACKEND_HOST,
-  timeout: 60000,
+  timeout: 300000,
   withCredentials: true,
 })
 
