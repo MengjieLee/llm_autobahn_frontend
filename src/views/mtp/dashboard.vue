@@ -1,0 +1,3 @@
+<template>
+    MTP Dashboard
+</template>

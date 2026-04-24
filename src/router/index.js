@@ -7,6 +7,7 @@ import {
 import datasets from './modules/datasets'
 import sqlStudio from './modules/sqlStudio'
 import olap from './modules/olap'
+import mtp from './modules/mtp'
 
 import Layout from '@/layout/index.vue'
 import {
@@ -43,6 +44,7 @@ const router = createRouter({
     datasets,
     sqlStudio,
     olap,
+    mtp,
     {
       path: '/about',
       component: Layout,
