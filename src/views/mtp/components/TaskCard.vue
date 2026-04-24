@@ -273,6 +273,7 @@ const formatRateMap = (rates) => {
 
 <style scoped>
 .mtp-task-card {
+  --sc: 144, 147, 153;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
   padding: 14px 18px;
@@ -281,33 +282,29 @@ const formatRateMap = (rates) => {
   position: relative;
 }
 .mtp-task-card:hover {
-  border-color: #409eff;
-  background: #f5f9ff;
-  animation: hover-glow 2s ease-in-out infinite;
-}
-@keyframes hover-glow {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2), 0 2px 8px rgba(64, 158, 255, 0.1); }
-  50% { box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.35), 0 6px 24px rgba(64, 158, 255, 0.2); }
+  border-color: rgb(var(--sc));
+  animation: status-glow 2s ease-in-out infinite;
 }
 
 /* 运行中呼吸动画 */
 .mtp-task-card.is-running {
-  animation: running-breathe 2.5s ease-in-out infinite;
-}
-@keyframes running-breathe {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(64, 158, 255, 0); }
-  50% { box-shadow: 0 0 0 6px rgba(64, 158, 255, 0.3); }
+  animation: status-glow 2.5s ease-in-out infinite;
 }
 
-/* 状态左边框 */
-.status-running, .status-starting { border-left: 3px solid #409eff; }
-.status-queued { border-left: 3px solid #79bbff; }
-.status-completed { border-left: 3px solid #67c23a; }
-.status-failed { border-left: 3px solid #f56c6c; }
-.status-prepared { border-left: 3px solid #a855f7; }
-.status-preparing, .status-materializing { border-left: 3px solid #e6a23c; }
-.status-cancelled { border-left: 3px solid #909399; }
-.status-scheduled { border-left: 3px solid #79bbff; }
+@keyframes status-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--sc), 0); }
+  50% { box-shadow: 0 0 0 5px rgba(var(--sc), 0.3); }
+}
+
+/* 状态颜色 */
+.status-running, .status-starting { --sc: 64, 158, 255; border-left: 3px solid rgb(var(--sc)); }
+.status-queued { --sc: 121, 187, 255; border-left: 3px solid rgb(var(--sc)); }
+.status-completed { --sc: 103, 194, 58; border-left: 3px solid rgb(var(--sc)); }
+.status-failed { --sc: 245, 108, 108; border-left: 3px solid rgb(var(--sc)); }
+.status-prepared { --sc: 168, 85, 247; border-left: 3px solid rgb(var(--sc)); }
+.status-preparing, .status-materializing { --sc: 230, 162, 60; border-left: 3px solid rgb(var(--sc)); }
+.status-cancelled { --sc: 144, 147, 153; border-left: 3px solid rgb(var(--sc)); }
+.status-scheduled { --sc: 121, 187, 255; border-left: 3px solid rgb(var(--sc)); }
 
 /* 顶栏 */
 .card-top {
@@ -351,7 +348,7 @@ const formatRateMap = (rates) => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #409eff;
+  background: rgb(var(--sc));
   margin-right: 4px;
   vertical-align: middle;
   animation: dot-blink 1.2s ease-in-out infinite;
