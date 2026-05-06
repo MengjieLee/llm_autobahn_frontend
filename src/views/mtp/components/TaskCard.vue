@@ -7,10 +7,15 @@
     <div class="card-top">
       <div class="card-top-left">
         <span class="task-name" :title="task.name || task.id">{{ task.name || task.id }}</span>
-        <el-tag :type="statusTagType" :class="statusTagClass" size="small" disable-transitions>
-          <span v-if="isRunning" class="running-dot" />
-          {{ statusLabel }}
-        </el-tag>
+        <div class="status-stack">
+          <el-tag :type="phaseTagType" :class="phaseTagClass" size="small" disable-transitions>
+            <span v-if="isRunning" class="running-dot" />
+            {{ lifecycle.phase }}
+          </el-tag>
+          <el-tag v-if="lifecycle.result !== '-'" :type="resultTagType" size="small" disable-transitions>
+            {{ lifecycle.result }}
+          </el-tag>
+        </div>
       </div>
       <div class="card-top-right">
         <el-button size="small" @click.stop="$emit('click', task)">查看详情</el-button>
@@ -76,11 +81,11 @@
       </div>
       <div class="cell">
         <span class="cell-label">PHASE</span>
-        <span class="cell-value">{{ statusLabel }}</span>
+        <span class="cell-value">{{ lifecycle.phase }}</span>
       </div>
       <div class="cell">
         <span class="cell-label">RESULT</span>
-        <span class="cell-value">{{ resultLabel }}</span>
+        <span class="cell-value">{{ lifecycle.result }}</span>
       </div>
 
       <!-- Row 3: 核心指标（execute 模式 或 完成态的 materialize 模式） -->
@@ -149,6 +154,7 @@
 <script setup>
 import { computed } from 'vue'
 import { DocumentCopy } from '@element-plus/icons-vue'
+import { RUNNING_STATUSES, TERMINAL_STATUSES, normalizeStatus, deriveLifecycle, PHASE_TAG_TYPES, RESULT_TAG_TYPES } from '../constants'
 
 const props = defineProps({
   task: { type: Object, required: true },
@@ -158,41 +164,25 @@ const props = defineProps({
 
 defineEmits(['click', 'cancel', 'load-config'])
 
-const RUNNING_STATUSES = new Set(['queued', 'starting', 'running', 'preparing', 'materializing'])
-
 const summary = computed(() => props.task.task_summary || {})
 
 const statusKey = computed(() => {
-  const stage = props.task.pipeline?.current_stage || props.task.status || 'unknown'
-  return stage === 'done' ? 'completed' : stage
+  const raw = props.task.pipeline?.current_stage || props.task.status || 'unknown'
+  return normalizeStatus(raw)
 })
+
+const lifecycle = computed(() => deriveLifecycle(statusKey.value))
 
 const isRunning = computed(() => RUNNING_STATUSES.has(statusKey.value))
 
-const isTerminal = computed(() => statusKey.value === 'completed' || statusKey.value === 'failed')
+const isTerminal = computed(() => TERMINAL_STATUSES.has(statusKey.value))
 
-const statusLabel = computed(() => {
-  const map = {
-    queued: 'Queued', starting: 'Starting', running: 'Running',
-    completed: 'Completed', done: 'Completed', failed: 'Failed',
-    cancelled: 'Cancelled', preparing: 'Preparing', materializing: 'Materializing',
-    prepared: 'Prepared', scheduled: 'Scheduled', unknown: 'Unknown',
-  }
-  return map[statusKey.value] || statusKey.value
-})
+const phaseTagType = computed(() => PHASE_TAG_TYPES[lifecycle.value.phaseClass] || 'info')
 
-const statusTagType = computed(() => {
-  const map = {
-    running: '', starting: '', queued: 'info',
-    completed: 'success', failed: 'danger', cancelled: 'info',
-    preparing: 'warning', materializing: 'warning', prepared: 'info',
-    scheduled: 'info',
-  }
-  return map[statusKey.value] || 'info'
-})
+const resultTagType = computed(() => RESULT_TAG_TYPES[lifecycle.value.resultClass] || '')
 
-const statusTagClass = computed(() => ({
-  'tag-purple': statusKey.value === 'prepared',
+const phaseTagClass = computed(() => ({
+  'tag-prepared': lifecycle.value.phaseClass === 'prepared',
   'tag-running': isRunning.value,
 }))
 
@@ -209,15 +199,6 @@ const copyBtnClass = computed(() => {
 })
 
 const canCancel = computed(() => RUNNING_STATUSES.has(statusKey.value))
-
-const resultLabel = computed(() => {
-  if (props.task.execution_mode === 'materialize_only') {
-    return statusKey.value === 'prepared' ? 'Manual Run' : '—'
-  }
-  if (statusKey.value === 'completed') return 'Done'
-  if (statusKey.value === 'failed') return 'Error'
-  return '—'
-})
 
 const isReady = computed(() => {
   return statusKey.value === 'prepared' || statusKey.value === 'completed'
@@ -304,7 +285,8 @@ const formatRateMap = (rates) => {
 .status-prepared { --sc: 168, 85, 247; border-left: 3px solid rgb(var(--sc)); }
 .status-preparing, .status-materializing { --sc: 230, 162, 60; border-left: 3px solid rgb(var(--sc)); }
 .status-cancelled { --sc: 144, 147, 153; border-left: 3px solid rgb(var(--sc)); }
-.status-scheduled { --sc: 121, 187, 255; border-left: 3px solid rgb(var(--sc)); }
+.status-connector_missing { --sc: 245, 108, 108; border-left: 3px solid rgb(var(--sc)); }
+.status-finished { --sc: 144, 147, 153; border-left: 3px solid rgb(var(--sc)); }
 
 /* 顶栏 */
 .card-top {
@@ -337,11 +319,24 @@ const formatRateMap = (rates) => {
   min-width: 0;
 }
 
+/* 双 pill 状态容器 (对齐上游 status-stack) */
+.status-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* 运行中 tag + 闪烁圆点 */
 .tag-running {
   --el-tag-bg-color: #ecf5ff;
   --el-tag-border-color: #b3d8ff;
   --el-tag-text-color: #409eff;
+}
+/* prepared 蓝紫主题 (对齐上游 .pill.prepared 蓝调) */
+.tag-prepared {
+  --el-tag-bg-color: #f3e8ff;
+  --el-tag-border-color: #d8b4fe;
+  --el-tag-text-color: #7c3aed;
 }
 .running-dot {
   display: inline-block;
@@ -421,12 +416,6 @@ const formatRateMap = (rates) => {
   gap: 6px;
 }
 
-/* 紫色主题 */
-.tag-purple {
-  --el-tag-bg-color: #f3e8ff;
-  --el-tag-border-color: #d8b4fe;
-  --el-tag-text-color: #7c3aed;
-}
 .btn-purple {
   color: #a855f7;
 }

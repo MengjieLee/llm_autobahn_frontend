@@ -17,7 +17,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="execFilter.name"
-            placeholder="按任务名过滤"
+            placeholder="按任务名搜索"
             clearable
             style="width: 200px"
             @clear="loadExecuteTasks"
@@ -30,13 +30,25 @@
             style="width: 130px"
             @change="loadExecuteTasks"
           >
-            <el-option label="Queued" value="queued" />
-            <el-option label="Starting" value="starting" />
-            <el-option label="Running" value="running" />
-            <el-option label="Completed" value="completed" />
-            <el-option label="Failed" value="failed" />
-            <el-option label="Cancelled" value="cancelled" />
-            <el-option label="Scheduled" value="scheduled" />
+            <el-option
+              v-for="opt in STATUS_FILTER_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+          <el-select
+            v-model="execFilter.scope"
+            placeholder="展示范围"
+            style="width: 140px"
+            @change="loadExecuteTasks"
+          >
+            <el-option
+              v-for="opt in SCOPE_FILTER_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </div>
         <div v-loading="execLoading" element-loading-text="正在加载任务列表…" class="task-list">
@@ -68,7 +80,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="matFilter.name"
-            placeholder="按任务名过滤"
+            placeholder="按任务名搜索"
             clearable
             style="width: 200px"
             @clear="loadMaterializeTasks"
@@ -81,13 +93,26 @@
             style="width: 130px"
             @change="loadMaterializeTasks"
           >
-            <el-option label="Preparing" value="preparing" />
-            <el-option label="Materializing" value="materializing" />
+            <el-option
+              v-for="opt in STATUS_FILTER_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
             <el-option label="Prepared" value="prepared" />
-            <el-option label="Running" value="running" />
-            <el-option label="Completed" value="completed" />
-            <el-option label="Failed" value="failed" />
-            <el-option label="Cancelled" value="cancelled" />
+          </el-select>
+          <el-select
+            v-model="matFilter.scope"
+            placeholder="展示范围"
+            style="width: 140px"
+            @change="loadMaterializeTasks"
+          >
+            <el-option
+              v-for="opt in SCOPE_FILTER_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </el-select>
         </div>
         <div v-loading="matLoading" element-loading-text="正在加载物化脚本列表…" class="task-list">
@@ -131,6 +156,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { mtpListTasks, mtpCancelTask, mtpGetTaskLaunchConfig } from '@/api/mtpEval/index'
+import { RUNNING_STATUSES, TERMINAL_STATUSES, normalizeStatus, STATUS_FILTER_OPTIONS, SCOPE_FILTER_OPTIONS } from './constants'
 import TaskCard from './components/TaskCard.vue'
 import TaskCreateStepper from './components/TaskCreateStepper.vue'
 import TaskDetail from './components/TaskDetail.vue'
@@ -155,11 +181,8 @@ const allTasks = ref([])
 const execLoading = ref(false)
 const matLoading = ref(false)
 
-const execFilter = reactive({ name: '', status: '' })
-const matFilter = reactive({ name: '', status: '' })
-
-const EXECUTE_STATUSES = new Set(['queued', 'starting', 'running', 'completed', 'done', 'failed', 'cancelled'])
-const MATERIALIZE_STATUSES = new Set(['preparing', 'materializing', 'prepared'])
+const execFilter = reactive({ name: '', status: '', scope: 'recent' })
+const matFilter = reactive({ name: '', status: '', scope: 'recent' })
 
 const executeTasks = ref([])
 const materializeTasks = ref([])
@@ -207,12 +230,11 @@ const splitTasks = () => {
   }
   if (execFilter.status) {
     exec = exec.filter(t => {
-      const s = t.pipeline?.current_stage || t.status || ''
-      if (execFilter.status === 'completed') return s === 'done' || s === 'completed'
-      if (execFilter.status === 'running') return ['queued', 'starting', 'running'].includes(s)
+      const s = normalizeStatus(t.pipeline?.current_stage || t.status)
       return s === execFilter.status
     })
   }
+  exec = applyScope(exec, execFilter.scope)
   executeTasks.value = exec
 
   // materialize tasks
@@ -222,11 +244,32 @@ const splitTasks = () => {
   }
   if (matFilter.status) {
     mat = mat.filter(t => {
-      const s = t.pipeline?.current_stage || t.status || ''
+      const s = normalizeStatus(t.pipeline?.current_stage || t.status)
       return s === matFilter.status
     })
   }
+  mat = applyScope(mat, matFilter.scope)
   materializeTasks.value = mat
+}
+
+/** 对齐上游 scope 过滤: recent(前20), active(运行中/排队), failed, all */
+const applyScope = (tasks, scope) => {
+  if (scope === 'active') {
+    return tasks.filter(t => {
+      const s = normalizeStatus(t.pipeline?.current_stage || t.status)
+      return RUNNING_STATUSES.has(s)
+    })
+  }
+  if (scope === 'failed') {
+    return tasks.filter(t => {
+      const s = normalizeStatus(t.pipeline?.current_stage || t.status)
+      return s === 'failed'
+    })
+  }
+  if (scope === 'recent') {
+    return tasks.slice(0, 20)
+  }
+  return tasks // 'all'
 }
 
 const loadExecuteTasks = () => { execPage.current = 1; splitTasks() }
@@ -273,8 +316,8 @@ const startGlobalPolling = () => {
   stopGlobalPolling()
   globalPollTimer = setInterval(() => {
     const hasRunning = allTasks.value.some(t => {
-      const s = t.pipeline?.current_stage || t.status || ''
-      return !['done', 'completed', 'failed', 'cancelled', 'prepared'].includes(s)
+      const s = normalizeStatus(t.pipeline?.current_stage || t.status)
+      return !TERMINAL_STATUSES.has(s)
     })
     if (hasRunning) loadAllTasks({ silent: true, poll: true })
   }, POLL_INTERVAL)

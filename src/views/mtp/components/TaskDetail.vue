@@ -20,7 +20,10 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType" size="small">{{ statusLabel }}</el-tag>
+          <div class="status-stack">
+            <el-tag :type="phaseTagType" size="small">{{ lifecycle.phase }}</el-tag>
+            <el-tag v-if="lifecycle.result !== '-'" :type="resultTagType" size="small">{{ lifecycle.result }}</el-tag>
+          </div>
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ task.created_at || '—' }}</el-descriptions-item>
       </el-descriptions>
@@ -43,9 +46,12 @@
         <el-table-column prop="bench" label="Bench" min-width="120">
           <template #default="{ row }">{{ row.bench || row.id || '—' }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="Status" width="110">
+        <el-table-column prop="status" label="Status" width="150">
           <template #default="{ row }">
-            <el-tag :type="rowStatusType(row.status)" size="small">{{ row.status || '—' }}</el-tag>
+            <div class="status-stack">
+              <el-tag :type="rowPhaseType(row.status)" size="small">{{ rowLifecycle(row.status).phase }}</el-tag>
+              <el-tag v-if="rowLifecycle(row.status).result !== '-'" :type="rowResultType(row.status)" size="small">{{ rowLifecycle(row.status).result }}</el-tag>
+            </div>
           </template>
         </el-table-column>
         <template v-if="showMetrics">
@@ -95,6 +101,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { mtpGetTask, mtpCancelTask } from '@/api/mtpEval/index'
+import { RUNNING_STATUSES, TERMINAL_STATUSES, normalizeStatus, deriveLifecycle, PHASE_TAG_TYPES, RESULT_TAG_TYPES } from '../constants'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -112,9 +119,6 @@ const loading = ref(false)
 const cancelling = ref(false)
 let pollTimer = null
 
-const RUNNING_STATUSES = new Set(['queued', 'starting', 'running', 'preparing', 'materializing'])
-const TERMINAL_STATUSES = new Set(['completed', 'done', 'failed', 'cancelled', 'prepared'])
-
 const isMaterialize = computed(() => task.value?.execution_mode === 'materialize_only')
 
 const isCompleted = computed(() => statusKey.value === 'completed' || statusKey.value === 'failed')
@@ -122,39 +126,23 @@ const isCompleted = computed(() => statusKey.value === 'completed' || statusKey.
 const showMetrics = computed(() => !isMaterialize.value || isCompleted.value)
 
 const statusKey = computed(() => {
-  const s = task.value?.pipeline?.current_stage || task.value?.status || 'unknown'
-  return s === 'done' ? 'completed' : s
+  const raw = task.value?.pipeline?.current_stage || task.value?.status || 'unknown'
+  return normalizeStatus(raw)
 })
 
-const statusLabel = computed(() => {
-  const map = {
-    queued: 'Queued', starting: 'Starting', running: 'Running',
-    completed: 'Completed', failed: 'Failed', cancelled: 'Cancelled',
-    preparing: 'Preparing', materializing: 'Materializing', prepared: 'Prepared',
-    scheduled: 'Scheduled', unknown: 'Unknown',
-  }
-  return map[statusKey.value] || statusKey.value
-})
+const lifecycle = computed(() => deriveLifecycle(statusKey.value))
 
-const statusTagType = computed(() => {
-  const map = {
-    running: '', starting: '', queued: 'info',
-    completed: 'success', failed: 'danger', cancelled: 'info',
-    preparing: 'warning', materializing: 'warning', prepared: 'success',
-  }
-  return map[statusKey.value] || 'info'
-})
+const phaseTagType = computed(() => PHASE_TAG_TYPES[lifecycle.value.phaseClass] || 'info')
+
+const resultTagType = computed(() => RESULT_TAG_TYPES[lifecycle.value.resultClass] || '')
 
 const canCancel = computed(() => RUNNING_STATUSES.has(statusKey.value))
 
 const taskRows = computed(() => task.value?.task_rows || [])
 
-const rowStatusType = (s) => {
-  if (s === 'completed' || s === 'done' || s === 'prepared') return 'success'
-  if (s === 'failed') return 'danger'
-  if (s === 'running') return ''
-  return 'info'
-}
+const rowLifecycle = (s) => deriveLifecycle(normalizeStatus(s))
+const rowPhaseType = (s) => PHASE_TAG_TYPES[rowLifecycle(s).phaseClass] || 'info'
+const rowResultType = (s) => RESULT_TAG_TYPES[rowLifecycle(s).resultClass] || ''
 
 const fmtNum = (v) => v != null ? Number(v).toFixed(3) : '—'
 
@@ -213,8 +201,7 @@ const startPolling = () => {
     try {
       const res = await mtpGetTask(props.taskId, { poll: true })
       task.value = res.data || null
-      const s = task.value?.pipeline?.current_stage || task.value?.status
-      if (TERMINAL_STATUSES.has(s) || TERMINAL_STATUSES.has(s === 'done' ? 'completed' : s)) {
+      if (TERMINAL_STATUSES.has(statusKey.value)) {
         stopPolling()
       }
     } catch { /* ignore */ }
@@ -238,6 +225,12 @@ watch(visible, (v) => {
 </script>
 
 <style scoped>
+.status-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .script-block {
   background: #f5f7fa;
   border-radius: 6px;
