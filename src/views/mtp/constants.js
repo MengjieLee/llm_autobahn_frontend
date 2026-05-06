@@ -111,28 +111,23 @@ export const RESULT_TAG_TYPES = {
   neutral: '',
 }
 
-// ─── 状态过滤器选项（对齐上游页面 task-status-filter） ──────────────────
+// ─── 过滤器选项 ────────────────────────────────────────────────────────
 
+/** Phase 过滤器（按阶段过滤，对齐 deriveLifecycle.phase） */
 export const STATUS_FILTER_OPTIONS = [
-  { label: 'Running', value: 'running' },
-  { label: 'Preparing', value: 'preparing' },
   { label: 'Queued', value: 'queued' },
+  { label: 'Starting', value: 'starting' },
+  { label: 'Preparing', value: 'preparing' },
+  { label: 'Prepared', value: 'prepared' },
+  { label: 'Running', value: 'running' },
+  { label: 'Finished', value: 'finished' },
+]
+
+/** Result 过滤器（按结果过滤，对齐 deriveLifecycle.result） */
+export const SCOPE_FILTER_OPTIONS = [
   { label: 'Completed', value: 'completed' },
   { label: 'Failed', value: 'failed' },
   { label: 'Cancelled', value: 'cancelled' },
-]
-
-/** 展示范围选项（对齐上游 task-scope-filter） */
-export const SCOPE_FILTER_OPTIONS = [
-  { label: '最近 20 条', value: 'recent' },
-  { label: '仅运行中/排队', value: 'active' },
-  { label: '仅失败', value: 'failed' },
-  { label: '全部', value: 'all' },
-]
-
-/** 排序选项（对齐上游 task-sort-select） */
-export const SORT_OPTIONS = [
-  { label: '按创建时间倒序', value: 'created_desc' },
-  { label: '按创建时间正序', value: 'created_asc' },
-  { label: '按任务名', value: 'name_asc' },
+  { label: 'Connector Missing', value: 'connector_missing' },
+  { label: 'Manual Run', value: 'manual_run' },
 ]
