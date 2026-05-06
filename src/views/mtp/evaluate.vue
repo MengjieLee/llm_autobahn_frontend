@@ -5,6 +5,20 @@
       <!-- Tab 1: 物化脚本 -->
       <el-tab-pane label="物化脚本" name="materialize">
         <div class="tab-toolbar">
+          <el-select
+            v-model="matFilter.owner"
+            placeholder="Owner"
+            clearable
+            style="width: 140px"
+            @change="loadMaterializeTasks"
+          >
+            <el-option
+              v-for="o in ownerOptions"
+              :key="o"
+              :label="o"
+              :value="o"
+            />
+          </el-select>
           <el-input
             v-model="matFilter.name"
             placeholder="按任务名搜索"
@@ -115,6 +129,20 @@
               :value="opt.value"
             />
           </el-select>
+          <el-select
+            v-model="execFilter.owner"
+            placeholder="Owner"
+            clearable
+            style="width: 140px"
+            @change="loadExecuteTasks"
+          >
+            <el-option
+              v-for="o in ownerOptions"
+              :key="o"
+              :label="o"
+              :value="o"
+            />
+          </el-select>
         </div>
         <div v-loading="execLoading" element-loading-text="正在加载任务列表…" class="task-list">
           <TaskCard
@@ -191,11 +219,20 @@ const allTasks = ref([])
 const execLoading = ref(false)
 const matLoading = ref(false)
 
-const execFilter = reactive({ name: '', status: '', scope: '' })
-const matFilter = reactive({ name: '', status: '', scope: '' })
+const execFilter = reactive({ name: '', status: '', scope: '', owner: '' })
+const matFilter = reactive({ name: '', status: '', scope: '', owner: '' })
 
 const executeTasks = ref([])
 const materializeTasks = ref([])
+
+// 动态提取所有不重复的 owner 列表
+const ownerOptions = computed(() => {
+  const set = new Set()
+  for (const t of allTasks.value) {
+    if (t.owner) set.add(t.owner)
+  }
+  return [...set].sort()
+})
 
 // --- 分页 ---
 const execPage = reactive({ current: 1, size: 12 })
@@ -272,6 +309,9 @@ const applyFilters = (tasks, filter) => {
       if (filter.scope === 'connector_missing') return lc.resultClass === 'failed' && s === 'connector_missing'
       return lc.resultClass === filter.scope
     })
+  }
+  if (filter.owner) {
+    result = result.filter(t => (t.owner || '') === filter.owner)
   }
   return result
 }
