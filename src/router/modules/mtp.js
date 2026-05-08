@@ -7,7 +7,7 @@ const mtp = {
   redirect: '/mtp/evaluate',
   name: 'MTP',
   meta: {
-    title: 'MTP 实验室',
+    title: 'SD (投机解码)',
     icon: DataAnalysis,
     alwaysShow: true,
   },
