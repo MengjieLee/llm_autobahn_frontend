@@ -13,6 +13,7 @@
       <el-step title="连接器" />
       <el-step title="服务配置" />
       <el-step title="基准测试" />
+      <el-step title="任务参数" />
       <el-step title="确认发起" />
     </el-steps>
 
@@ -207,8 +208,47 @@
       </el-form>
     </div>
 
-    <!-- Step 4: 确认 -->
+    <!-- Step 4: 任务参数 -->
     <div v-show="step === 3">
+      <el-form label-width="120px">
+        <el-form-item label="Chat Thinking">
+          <el-select v-model="taskArgs.enableThinking" style="width: 220px">
+            <el-option label="(backend default)" value="" />
+            <el-option label="enable" value="true" />
+            <el-option label="disable" value="false" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Temperature">
+          <el-input-number
+            v-model="taskArgs.temperature"
+            :min="0"
+            :max="2"
+            :step="0.1"
+            :precision="2"
+            controls-position="right"
+            placeholder="留空使用默认值"
+            style="width: 220px"
+          />
+          <el-button link style="margin-left: 8px" @click="taskArgs.temperature = null">清除</el-button>
+        </el-form-item>
+        <el-form-item label="透传参数">
+          <div>
+            <div style="color: #909399; font-size: 12px; margin-bottom: 8px">默认全部关闭。只透传你明确勾选的字段。</div>
+            <el-checkbox-group v-model="taskArgs.sampleRequestParamKeys">
+              <el-checkbox
+                v-for="opt in sampleParamOptions"
+                :key="opt.key"
+                :label="opt.key"
+                :value="opt.key"
+              >{{ opt.label }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <!-- Step 5: 确认 -->
+    <div v-show="step === 4">
       <el-form label-width="100px">
         <el-form-item label="任务名称">
           <el-input v-model="form.name" placeholder="可选，留空自动生成" />
@@ -238,10 +278,10 @@
     <!-- 底部按钮 -->
     <template #footer>
       <el-button v-if="step > 0" @click="step--">上一步</el-button>
-      <el-button v-if="step < 3" type="primary" :disabled="!canNext" @click="step++">下一步</el-button>
-      <el-button v-if="step === 3" @click="doPreview" :loading="previewing">预览脚本</el-button>
+      <el-button v-if="step < 4" type="primary" :disabled="!canNext" @click="step++">下一步</el-button>
+      <el-button v-if="step === 4" @click="doPreview" :loading="previewing">预览脚本</el-button>
       <el-button
-        v-if="step === 3"
+        v-if="step === 4"
         type="primary"
         :loading="submitting"
         @click="doSubmit"
@@ -283,6 +323,28 @@ const form = reactive({
   connector_id: '',
 })
 const selectedBenches = ref([])
+
+// --- 任务参数 (透传) ---
+const taskArgs = reactive({
+  enableThinking: '',
+  temperature: null,
+  sampleRequestParamKeys: [],
+})
+const sampleParamOptions = [
+  { key: 'temperature', label: 'temperature' },
+  { key: 'top_p', label: 'top_p' },
+  { key: 'presence_penalty', label: 'presence_penalty' },
+  { key: 'frequency_penalty', label: 'frequency_penalty' },
+  { key: 'repetition_penalty', label: 'repetition_penalty' },
+  { key: 'stop', label: 'stop' },
+  { key: 'seed', label: 'seed' },
+  { key: 'response_format', label: 'response_format' },
+  { key: 'tools', label: 'tools' },
+  { key: 'tool_choice', label: 'tool_choice' },
+  { key: 'user', label: 'user' },
+  { key: 'safety', label: 'safety' },
+  { key: 'chat_template_kwargs', label: 'chat_template_kwargs' },
+]
 
 // --- 服务配置 (JSON Editor) ---
 const selectedProfileId = ref('')
@@ -530,15 +592,35 @@ const doPreview = async () => {
 // --- 提交 ---
 const submitting = ref(false)
 
+const buildTaskArgs = () => {
+  const args = {}
+  if (taskArgs.enableThinking) {
+    args.api_mode = 'chat'
+    args.enable_thinking = taskArgs.enableThinking
+  }
+  if (taskArgs.temperature != null) {
+    args.temperature = taskArgs.temperature
+  }
+  if (taskArgs.sampleRequestParamKeys.length) {
+    args.sample_request_param_keys = taskArgs.sampleRequestParamKeys.join(',')
+    if (!args.api_mode) args.api_mode = 'chat'
+  }
+  return Object.keys(args).length ? args : null
+}
+
 const doSubmit = async () => {
   submitting.value = true
   try {
+    const taskArgsPayload = buildTaskArgs()
     const payload = {
       name: form.name || undefined,
       connector_id: form.connector_id,
       service: parsedServiceConfig.value || {},
       service_profile_id: selectedProfileId.value || undefined,
-      tasks: selectedBenches.value.map(id => ({ bench: id })),
+      tasks: selectedBenches.value.map(id => ({
+        bench: id,
+        ...(taskArgsPayload ? { args: taskArgsPayload } : {}),
+      })),
     }
     await mtpLaunchTask(payload)
     ElMessage.success(isMaterializeMode.value ? '脚本生成任务已提交' : '评测任务已提交')
@@ -632,6 +714,9 @@ const resetAll = () => {
   selectedBenches.value = []
   selectedTaskPreset.value = ''
   selectedConnectorObj.value = null
+  taskArgs.enableThinking = ''
+  taskArgs.temperature = null
+  taskArgs.sampleRequestParamKeys = []
 }
 </script>
 
