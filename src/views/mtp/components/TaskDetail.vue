@@ -2,8 +2,8 @@
   <el-dialog
     v-model="visible"
     title="任务详情"
-    width="95%"
-    style="max-width: 1400px"
+    fullscreen
+    append-to-body
     destroy-on-close
   >
     <!-- 加载状态 -->
@@ -26,7 +26,7 @@
             <el-tag v-if="lifecycle.result !== '-'" :type="resultTagType" size="small">{{ lifecycle.result }}</el-tag>
           </div>
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ task.created_at || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ fmtTime(task.created_at) }}</el-descriptions-item>
       </el-descriptions>
 
       <!-- 物化模式：脚本路径 -->
@@ -44,7 +44,7 @@
       <!-- task_rows 基准测试明细 -->
       <el-divider content-position="left">基准测试明细</el-divider>
       <el-table :data="taskRows" size="small" stripe border style="width: 100%" :default-sort="{ prop: 'id' }">
-        <el-table-column prop="id" label="id" min-width="100">
+        <el-table-column prop="id" label="id" width="120" fixed="left">
           <template #default="{ row }">{{ row.id || '—' }}</template>
         </el-table-column>
         <el-table-column prop="bench" label="bench" min-width="100">
@@ -58,11 +58,22 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="started" width="155" align="center">
+          <template #default="{ row }">{{ fmtTime(row.started_at_utc) }}</template>
+        </el-table-column>
+        <el-table-column label="finished" width="155" align="center">
+          <template #default="{ row }">{{ fmtTime(row.finished_at_utc) }}</template>
+        </el-table-column>
         <el-table-column label="progress" width="90" align="center">
           <template #default="{ row }">{{ row.progress || '—' }}</template>
         </el-table-column>
         <template v-if="showMetrics">
-          <el-table-column label="throughput" width="95" align="center">
+          <el-table-column width="95" align="center">
+            <template #header>
+              <el-tooltip content="(token/s)" placement="top">
+                <span>throughput <span class="metric-help">?</span></span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">{{ fmtNum(row.throughput) }}</template>
           </el-table-column>
           <el-table-column label="latency" width="80" align="center">
@@ -137,7 +148,7 @@
             </template>
           </el-table-column>
         </template>
-        <el-table-column label="outputs" min-width="200">
+        <el-table-column label="outputs" min-width="200" fixed="right">
           <template #default="{ row }">
             <div class="inline-actions">
               <el-button v-if="row.args" link size="small" @click="showJson('config', row.args)">查看配置</el-button>
@@ -214,6 +225,13 @@ const rowPhaseType = (s) => PHASE_TAG_TYPES[rowLifecycle(s).phaseClass] || 'info
 const rowResultType = (s) => RESULT_TAG_TYPES[rowLifecycle(s).resultClass] || ''
 
 const fmtNum = (v) => v != null ? Number(v).toFixed(3) : '—'
+
+const fmtTime = (v) => {
+  if (!v) return '—'
+  const d = new Date(v)
+  if (isNaN(d.getTime())) return v
+  return d.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+}
 
 const formatRates = (rates) => {
   if (!rates) return '—'

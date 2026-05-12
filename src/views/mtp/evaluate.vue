@@ -191,7 +191,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { mtpListTasks, mtpCancelTask, mtpGetTaskLaunchConfig } from '@/api/mtpEval/index'
 import { TERMINAL_STATUSES, normalizeStatus, deriveLifecycle, STATUS_FILTER_OPTIONS, SCOPE_FILTER_OPTIONS } from './constants'
@@ -200,6 +201,8 @@ import TaskCreateStepper from './components/TaskCreateStepper.vue'
 import TaskDetail from './components/TaskDetail.vue'
 
 const activeTab = ref('materialize')
+const route = useRoute()
+const router = useRouter()
 
 // --- 新建 ---
 const createVisible = ref(false)
@@ -213,6 +216,12 @@ const openDetail = (task) => {
   detailTaskId.value = task.id
   detailVisible.value = true
 }
+
+watch(detailVisible, (v) => {
+  if (!v && route.params.taskId) {
+    router.replace({ name: 'Evaluate' })
+  }
+})
 
 // --- 任务数据 ---
 const allTasks = ref([])
@@ -375,6 +384,12 @@ const stopGlobalPolling = () => {
 onMounted(() => {
   loadAllTasks()
   startGlobalPolling()
+  // 路由带 taskId 时自动打开详情
+  const taskId = route.params.taskId
+  if (taskId) {
+    detailTaskId.value = taskId
+    detailVisible.value = true
+  }
 })
 
 onUnmounted(() => {

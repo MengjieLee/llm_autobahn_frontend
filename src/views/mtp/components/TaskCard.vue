@@ -38,8 +38,17 @@
     <div class="card-grid">
       <!-- Row 1: 基本信息 -->
       <div class="cell">
+        <span class="cell-label">ID</span>
+        <span class="cell-value id-cell" :title="task.id">
+          <span class="id-text">{{ task.id || '—' }}</span>
+          <el-button v-if="task.id" class="id-copy-btn" size="small" link @click.stop="copyId">
+            <el-icon><DocumentCopy /></el-icon>
+          </el-button>
+        </span>
+      </div>
+      <div class="cell">
         <span class="cell-label">CREATED</span>
-        <span class="cell-value">{{ task.created_at || '—' }}</span>
+        <span class="cell-value">{{ fmtTime(task.created_at) }}</span>
       </div>
       <div class="cell">
         <span class="cell-label">OWNER</span>
@@ -56,10 +65,6 @@
       <div class="cell">
         <span class="cell-label">EXEC MODE</span>
         <span class="cell-value">{{ task.execution_mode || '—' }}</span>
-      </div>
-      <div class="cell">
-        <span class="cell-label">QUEUE GROUP</span>
-        <span class="cell-value">{{ task.queue_group || '—' }}</span>
       </div>
 
       <!-- Row 2: 进度 -->
@@ -111,19 +116,31 @@
           <span class="cell-value">{{ fmtNum(summary.filteredAcceptLength) }}</span>
         </div>
         <div class="cell">
-          <span class="cell-label">MTP HEAD RATES</span>
-          <span class="cell-value small">{{ formatRateMap(summary.sampleMeanMtpHeadAcceptRates) }}</span>
+          <span class="cell-label">AR MEAN</span>
+          <span class="cell-value small">{{ formatRateMap(summary.sampleMeanMtpHeadAcceptRates || summary.macroMtpHeadAcceptRates) }}</span>
+        </div>
+        <div class="cell">
+          <span class="cell-label">AR POOLED</span>
+          <span class="cell-value small">{{ formatRateMap(summary.pooledMtpHeadAcceptRates || summary.microMtpHeadAcceptRates) }}</span>
+        </div>
+        <div class="cell">
+          <span class="cell-label">CUMAR MEAN</span>
+          <span class="cell-value small">{{ formatRateMap(summary.sampleMeanMtpHeadCumulativeAcceptRates || summary.macroMtpHeadCumulativeAcceptRates) }}</span>
+        </div>
+        <div class="cell">
+          <span class="cell-label">CUMAR POOLED</span>
+          <span class="cell-value small">{{ formatRateMap(summary.pooledMtpHeadCumulativeAcceptRates || summary.microMtpHeadCumulativeAcceptRates) }}</span>
         </div>
       </template>
 
       <!-- materialize 模式：脚本 -->
       <template v-if="mode === 'materialize' && task.manual_run">
-        <div class="cell wide" :class="cellAccentClass">
+        <div class="cell" :class="cellAccentClass">
           <span class="cell-label">MANUAL RUN</span>
-          <span class="cell-value script manual-run-value" :title="task.manual_run.command">
-            {{ task.manual_run.command || '—' }}
-            <el-button v-if="task.manual_run.command" size="small" link :class="copyBtnClass" @click.stop="copyCommand">
-              <el-icon><DocumentCopy /></el-icon> 复制命令
+          <span class="cell-value script run-cell" :title="task.manual_run.command">
+            <span class="run-text">{{ task.manual_run.command || '—' }}</span>
+            <el-button v-if="task.manual_run.command" class="run-copy-btn" size="small" link :class="copyBtnClass" @click.stop="copyCommand">
+              <el-icon><DocumentCopy /></el-icon>
             </el-button>
           </span>
         </div>
@@ -131,12 +148,12 @@
 
       <!-- RUN DIR -->
       <template v-if="mode === 'materialize' && task.remote_run_dir">
-        <div class="cell wide" :class="cellAccentClass">
+        <div class="cell" :class="cellAccentClass">
           <span class="cell-label">RUN DIR</span>
-          <span class="cell-value script manual-run-value" :title="task.remote_run_dir">
-            {{ task.remote_run_dir }}
-            <el-button size="small" link :class="copyBtnClass" @click.stop="copyRunDir">
-              <el-icon><DocumentCopy /></el-icon> 复制
+          <span class="cell-value script run-cell" :title="task.remote_run_dir">
+            <span class="run-text">{{ task.remote_run_dir }}</span>
+            <el-button class="run-copy-btn" size="small" link :class="copyBtnClass" @click.stop="copyRunDir">
+              <el-icon><DocumentCopy /></el-icon>
             </el-button>
           </span>
         </div>
@@ -216,6 +233,15 @@ const copyCommand = async () => {
   }
 }
 
+const copyId = async () => {
+  try {
+    await navigator.clipboard.writeText(props.task.id)
+    ElMessage.success('已复制 ID')
+  } catch {
+    ElMessage.warning('复制失败')
+  }
+}
+
 const copyRunDir = async () => {
   const dir = props.task.remote_run_dir
   if (dir) {
@@ -242,6 +268,13 @@ const topError = computed(() => {
 })
 
 const fmtNum = (v) => v != null ? Number(v).toFixed(3) : '—'
+
+const fmtTime = (v) => {
+  if (!v) return '—'
+  const d = new Date(v)
+  if (isNaN(d.getTime())) return v
+  return d.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+}
 
 const formatRateMap = (rates) => {
   if (!rates || typeof rates !== 'object') return '—'
@@ -357,8 +390,6 @@ const formatRateMap = (rates) => {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 1px;
-  background: #ebeef5;
   border: 1px solid #ebeef5;
   border-radius: 4px;
   overflow: hidden;
@@ -370,6 +401,8 @@ const formatRateMap = (rates) => {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  border-right: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
 }
 .cell.wide {
   grid-column: span 6;
@@ -391,6 +424,8 @@ const formatRateMap = (rates) => {
 }
 .cell-value.small {
   font-size: 11px;
+  white-space: normal;
+  word-break: break-word;
 }
 .cell-value.script {
   font-family: monospace;
@@ -404,16 +439,44 @@ const formatRateMap = (rates) => {
 .cell-value.error {
   color: #f56c6c;
 }
+.id-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+  font-size: 12px;
+}
+.id-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.id-copy-btn {
+  flex-shrink: 0;
+  margin-left: 4px;
+}
 .cell-ready-green {
   background: #f0f9eb;
 }
 .cell-ready-purple {
   background: #f3e8ff;
 }
-.manual-run-value {
+.run-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+}
+.run-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.run-copy-btn {
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .btn-purple {

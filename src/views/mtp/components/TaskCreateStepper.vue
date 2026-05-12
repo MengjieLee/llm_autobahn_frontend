@@ -250,8 +250,8 @@
     <!-- Step 5: 确认 -->
     <div v-show="step === 4">
       <el-form label-width="100px">
-        <el-form-item label="任务名称">
-          <el-input v-model="form.name" placeholder="可选，留空自动生成" />
+        <el-form-item required label="任务名称">
+          <el-input v-model="form.name" :placeholder="preloadTaskName || autoTaskName" />
         </el-form-item>
       </el-form>
 
@@ -299,6 +299,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import { ctx } from '@/store'
 import {
   mtpListConnectors, mtpListConnectorPresets, mtpCreateConnector,
   mtpListServiceProfiles, mtpCreateServiceProfile, mtpListServicePresets,
@@ -323,6 +324,13 @@ const form = reactive({
   connector_id: '',
 })
 const selectedBenches = ref([])
+const preloadTaskName = ref('')
+
+const autoTaskName = computed(() => {
+  const user = ctx.userInfo?.username || ctx.userInfo?.name || 'user'
+  const ts = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }).replace(/[/\s:]/g, '').slice(4)
+  return `${user}_${ts}_eval-task`
+})
 
 // --- 任务参数 (透传) ---
 const taskArgs = reactive({
@@ -613,7 +621,7 @@ const doSubmit = async () => {
   try {
     const taskArgsPayload = buildTaskArgs()
     const payload = {
-      name: form.name || undefined,
+      name: form.name || autoTaskName.value,
       connector_id: form.connector_id,
       service: parsedServiceConfig.value || {},
       service_profile_id: selectedProfileId.value || undefined,
@@ -690,24 +698,34 @@ const applyPreloadTask = () => {
   if (t.service_profile_id) {
     selectedProfileId.value = t.service_profile_id
   }
-  // 预填基准测试（launch-config 返回 tasks: [{bench: "xxx"}, ...]）
+  // 预填基准测试（launch-config 返回 tasks: [{bench: "xxx", args: {...}}, ...]）
   if (Array.isArray(t.tasks) && t.tasks.length) {
     selectedBenches.value = t.tasks.map(r => r.bench || r.bench_id || r.id).filter(Boolean)
     transferKey.value++
+    // 恢复任务参数（取第一个 task 的 args 作为公共参数）
+    const args = t.tasks[0].args
+    if (args) {
+      taskArgs.enableThinking = args.enable_thinking || ''
+      taskArgs.temperature = args.temperature != null ? Number(args.temperature) : null
+      taskArgs.sampleRequestParamKeys = args.sample_request_param_keys
+        ? args.sample_request_param_keys.split(',').filter(Boolean)
+        : []
+    }
   }
-  // 预填任务名称
+  // 预填任务名称（作为 placeholder 提示，不填入输入框）
   if (t.name) {
-    form.name = t.name
+    preloadTaskName.value = t.name
   }
-  // 跳到第二步让用户检查配置
-  step.value = 1
-  ElMessage.success('已加载任务配置，请检查并调整')
+  // 直接跳到确认发起步骤
+  step.value = 4
+  ElMessage.success('已加载任务配置，请确认后发起')
 }
 
 const resetAll = () => {
   step.value = 0
   form.name = ''
   form.connector_id = ''
+  preloadTaskName.value = ''
   selectedProfileId.value = ''
   serviceConfigText.value = '{}'
   serviceConfigError.value = ''
