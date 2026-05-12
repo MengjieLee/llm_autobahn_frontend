@@ -218,19 +218,6 @@
             <el-option label="disable" value="false" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Temperature">
-          <el-input-number
-            v-model="taskArgs.temperature"
-            :min="0"
-            :max="2"
-            :step="0.1"
-            :precision="2"
-            controls-position="right"
-            placeholder="留空使用默认值"
-            style="width: 220px"
-          />
-          <el-button link style="margin-left: 8px" @click="taskArgs.temperature = null">清除</el-button>
-        </el-form-item>
         <el-form-item label="透传参数">
           <div>
             <div style="color: #909399; font-size: 12px; margin-bottom: 8px">默认全部关闭。只透传你明确勾选的字段。</div>
@@ -335,7 +322,6 @@ const autoTaskName = computed(() => {
 // --- 任务参数 (透传) ---
 const taskArgs = reactive({
   enableThinking: '',
-  temperature: null,
   sampleRequestParamKeys: [],
 })
 const sampleParamOptions = [
@@ -606,9 +592,6 @@ const buildTaskArgs = () => {
     args.api_mode = 'chat'
     args.enable_thinking = taskArgs.enableThinking
   }
-  if (taskArgs.temperature != null) {
-    args.temperature = taskArgs.temperature
-  }
   if (taskArgs.sampleRequestParamKeys.length) {
     args.sample_request_param_keys = taskArgs.sampleRequestParamKeys.join(',')
     if (!args.api_mode) args.api_mode = 'chat'
@@ -706,7 +689,6 @@ const applyPreloadTask = () => {
     const args = t.tasks[0].args
     if (args) {
       taskArgs.enableThinking = args.enable_thinking || ''
-      taskArgs.temperature = args.temperature != null ? Number(args.temperature) : null
       taskArgs.sampleRequestParamKeys = args.sample_request_param_keys
         ? args.sample_request_param_keys.split(',').filter(Boolean)
         : []
@@ -733,7 +715,6 @@ const resetAll = () => {
   selectedTaskPreset.value = ''
   selectedConnectorObj.value = null
   taskArgs.enableThinking = ''
-  taskArgs.temperature = null
   taskArgs.sampleRequestParamKeys = []
 }
 </script>
