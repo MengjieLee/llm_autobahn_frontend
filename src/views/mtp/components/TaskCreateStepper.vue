@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="新建评测任务"
-    width="70%"
+    width="80%"
     style="min-width: 900px"
     :close-on-click-modal="false"
     destroy-on-close
@@ -210,27 +210,34 @@
 
     <!-- Step 4: 任务参数 -->
     <div v-show="step === 3">
-      <el-form label-width="120px">
-        <el-form-item label="Chat Thinking">
-          <el-select v-model="taskArgs.enableThinking" style="width: 220px">
-            <el-option label="(backend default)" value="" />
-            <el-option label="enable" value="true" />
-            <el-option label="disable" value="false" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="透传参数">
-          <div>
-            <div style="color: #909399; font-size: 12px; margin-bottom: 8px">默认全部关闭。只透传你明确勾选的字段。</div>
-            <el-checkbox-group v-model="taskArgs.sampleRequestParamKeys">
-              <el-checkbox
-                v-for="opt in sampleParamOptions"
-                :key="opt.key"
-                :label="opt.key"
-                :value="opt.key"
-              >{{ opt.label }}</el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </el-form-item>
+      <el-form label-width="150px">
+        <div class="task-args-row">
+          <el-form-item label="Chat Thinking">
+            <el-select v-model="taskArgs.enableThinking" style="width: 200px">
+              <el-option label="(backend default)" value="" />
+              <el-option label="enable" value="true" />
+              <el-option label="disable" value="false" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Stream Response">
+            <div class="switch-with-hint">
+              <el-switch v-model="taskArgs.streamResponse" />
+              <span class="switch-hint">开启后可采集各 MTP head 独立接受率</span>
+            </div>
+          </el-form-item>
+        </div>
+        <el-divider content-position="left">透传参数</el-divider>
+        <div class="passthrough-section">
+          <div class="passthrough-hint">默认全部关闭。只透传你明确勾选的字段。</div>
+          <el-checkbox-group v-model="taskArgs.sampleRequestParamKeys" class="passthrough-checkboxes">
+            <el-checkbox
+              v-for="opt in sampleParamOptions"
+              :key="opt.key"
+              :label="opt.key"
+              :value="opt.key"
+            >{{ opt.label }}</el-checkbox>
+          </el-checkbox-group>
+        </div>
       </el-form>
     </div>
 
@@ -270,7 +277,6 @@
       <el-button
         v-if="step === 4"
         type="primary"
-        :loading="submitting"
         @click="doSubmit"
       >
         {{ isMaterializeMode ? '生成脚本' : '发起评测' }}
@@ -298,7 +304,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   preloadTask: { type: Object, default: null },
 })
-const emit = defineEmits(['update:modelValue', 'created'])
+const emit = defineEmits(['update:modelValue', 'created', 'task-settled', 'task-failed'])
 
 const visible = computed({
   get: () => props.modelValue,
@@ -322,6 +328,7 @@ const autoTaskName = computed(() => {
 // --- 任务参数 (透传) ---
 const taskArgs = reactive({
   enableThinking: '',
+  streamResponse: true,
   sampleRequestParamKeys: [],
 })
 const sampleParamOptions = [
@@ -584,10 +591,12 @@ const doPreview = async () => {
 }
 
 // --- 提交 ---
-const submitting = ref(false)
 
 const buildTaskArgs = () => {
   const args = {}
+  if (taskArgs.streamResponse) {
+    args.stream_response = true
+  }
   if (taskArgs.enableThinking) {
     args.api_mode = 'chat'
     args.enable_thinking = taskArgs.enableThinking
@@ -600,27 +609,40 @@ const buildTaskArgs = () => {
 }
 
 const doSubmit = async () => {
-  submitting.value = true
+  const taskArgsPayload = buildTaskArgs()
+  const payload = {
+    name: form.name || autoTaskName.value,
+    connector_id: form.connector_id,
+    service: parsedServiceConfig.value || {},
+    service_profile_id: selectedProfileId.value || undefined,
+    tasks: selectedBenches.value.map(id => ({
+      bench: id,
+      ...(taskArgsPayload ? { args: taskArgsPayload } : {}),
+    })),
+  }
+
+  const pendingId = `_pending_${Date.now()}`
+  const stub = {
+    id: pendingId,
+    _pending: true,
+    name: payload.name,
+    connector_name: selectedConnectorName.value,
+    execution_mode: isMaterializeMode.value ? 'materialize_only' : '',
+    status: 'queued',
+    created_at: new Date().toISOString(),
+    owner: '',
+    task_summary: {},
+  }
+
+  emit('created', stub)
+  visible.value = false
+
   try {
-    const taskArgsPayload = buildTaskArgs()
-    const payload = {
-      name: form.name || autoTaskName.value,
-      connector_id: form.connector_id,
-      service: parsedServiceConfig.value || {},
-      service_profile_id: selectedProfileId.value || undefined,
-      tasks: selectedBenches.value.map(id => ({
-        bench: id,
-        ...(taskArgsPayload ? { args: taskArgsPayload } : {}),
-      })),
-    }
-    await mtpLaunchTask(payload)
-    ElMessage.success(isMaterializeMode.value ? '脚本生成任务已提交' : '评测任务已提交')
-    visible.value = false
-    emit('created')
+    const res = await mtpLaunchTask(payload)
+    emit('task-settled', { pendingId, task: res.data })
   } catch (e) {
     ElMessage.error('提交失败: ' + (e.message || e))
-  } finally {
-    submitting.value = false
+    emit('task-failed', { pendingId })
   }
 }
 
@@ -689,6 +711,7 @@ const applyPreloadTask = () => {
     const args = t.tasks[0].args
     if (args) {
       taskArgs.enableThinking = args.enable_thinking || ''
+      taskArgs.streamResponse = args.stream_response !== false
       taskArgs.sampleRequestParamKeys = args.sample_request_param_keys
         ? args.sample_request_param_keys.split(',').filter(Boolean)
         : []
@@ -715,6 +738,7 @@ const resetAll = () => {
   selectedTaskPreset.value = ''
   selectedConnectorObj.value = null
   taskArgs.enableThinking = ''
+  taskArgs.streamResponse = true
   taskArgs.sampleRequestParamKeys = []
 }
 </script>
@@ -895,5 +919,35 @@ const resetAll = () => {
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* Step 4: 任务参数 */
+.task-args-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+.switch-with-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.switch-hint {
+  color: #909399;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.passthrough-section {
+  padding: 0 12px;
+}
+.passthrough-hint {
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.passthrough-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px 0;
 }
 </style>

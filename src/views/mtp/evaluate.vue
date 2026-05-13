@@ -21,7 +21,7 @@
           </el-select>
           <el-input
             v-model="matFilter.name"
-            placeholder="按任务名搜索"
+            placeholder="按任务名、ID 搜索"
             clearable
             style="width: 200px"
             @clear="loadMaterializeTasks"
@@ -57,15 +57,17 @@
           </el-select>
         </div>
         <div v-loading="matLoading" element-loading-text="正在加载物化脚本列表…" class="task-list">
-          <TaskCard
-            v-for="task in matPagedTasks"
-            :key="task.id"
-            :task="task"
-            mode="materialize"
-            @click="openDetail(task)"
-            @cancel="handleCancel"
-            @load-config="handleLoadConfig"
-          />
+          <TransitionGroup name="task-list">
+            <TaskCard
+              v-for="task in matPagedTasks"
+              :key="task.id"
+              :task="task"
+              mode="materialize"
+              @click="openDetail(task)"
+              @cancel="handleCancel"
+              @load-config="handleLoadConfig"
+            />
+          </TransitionGroup>
           <el-empty v-if="!matLoading && !materializeTasks.length" description="暂无物化脚本任务" />
         </div>
 
@@ -95,7 +97,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="execFilter.name"
-            placeholder="按任务名搜索"
+            placeholder="按任务名、ID 搜索"
             clearable
             style="width: 200px"
             @clear="loadExecuteTasks"
@@ -145,15 +147,17 @@
           </el-select>
         </div>
         <div v-loading="execLoading" element-loading-text="正在加载任务列表…" class="task-list">
-          <TaskCard
-            v-for="task in execPagedTasks"
-            :key="task.id"
-            :task="task"
-            mode="execute"
-            @click="openDetail(task)"
-            @cancel="handleCancel"
-            @load-config="handleLoadConfig"
-          />
+          <TransitionGroup name="task-list">
+            <TaskCard
+              v-for="task in execPagedTasks"
+              :key="task.id"
+              :task="task"
+              mode="execute"
+              @click="openDetail(task)"
+              @cancel="handleCancel"
+              @load-config="handleLoadConfig"
+            />
+          </TransitionGroup>
           <el-empty v-if="!execLoading && !executeTasks.length" description="暂无自动执行任务" />
         </div>
         <div class="task-fixed-panel">
@@ -179,7 +183,13 @@
     </el-tabs>
 
     <!-- 新建向导 -->
-    <TaskCreateStepper v-model="createVisible" :preload-task="preloadTask" @created="onTaskCreated" />
+    <TaskCreateStepper
+      v-model="createVisible"
+      :preload-task="preloadTask"
+      @created="onTaskCreated"
+      @task-settled="onTaskSettled"
+      @task-failed="onTaskFailed"
+    />
 
     <!-- 详情弹窗 -->
     <TaskDetail
@@ -263,7 +273,11 @@ const loadAllTasks = async ({ silent = false, poll = false } = {}) => {
   }
   try {
     const res = await mtpListTasks({ poll })
-    allTasks.value = res.data || []
+    const serverTasks = res.data || []
+    const pendingStubs = allTasks.value.filter(t => t._pending)
+    const serverIds = new Set(serverTasks.map(t => t.id))
+    const survivingStubs = pendingStubs.filter(s => !serverIds.has(s.id))
+    allTasks.value = [...survivingStubs, ...serverTasks]
     splitTasks()
   } catch (e) {
     ElNotification({ title: '加载任务列表失败', message: e.message || '', type: 'error' })
@@ -282,7 +296,7 @@ const splitTasks = () => {
     return mode !== 'materialize_only'
   })
   if (execFilter.name) {
-    exec = exec.filter(t => (t.name || '').includes(execFilter.name))
+    exec = exec.filter(t => (t.name || '').includes(execFilter.name) || String(t.id || '').includes(execFilter.name))
   }
   exec = applyFilters(exec, execFilter)
   executeTasks.value = exec
@@ -290,7 +304,7 @@ const splitTasks = () => {
   // materialize tasks
   let mat = all.filter(t => t.execution_mode === 'materialize_only')
   if (matFilter.name) {
-    mat = mat.filter(t => (t.name || '').includes(matFilter.name))
+    mat = mat.filter(t => (t.name || '').includes(matFilter.name) || String(t.id || '').includes(matFilter.name))
   }
   mat = applyFilters(mat, matFilter)
   materializeTasks.value = mat
@@ -352,10 +366,37 @@ const handleLoadConfig = async (task) => {
   createVisible.value = true
 }
 
-const onTaskCreated = () => {
+const onTaskCreated = (stub) => {
   preloadTask.value = null
-  loadAllTasks()
-  // 根据新任务类型切到对应 tab (创建后刷新即可)
+  if (stub?._pending) {
+    allTasks.value.unshift(stub)
+    splitTasks()
+    activeTab.value = stub.execution_mode === 'materialize_only' ? 'materialize' : 'execute'
+  } else {
+    loadAllTasks()
+  }
+}
+
+const onTaskSettled = ({ pendingId, task }) => {
+  const idx = allTasks.value.findIndex(t => t.id === pendingId)
+  if (idx !== -1) {
+    allTasks.value.splice(idx, 1, task)
+  } else {
+    const realIdx = allTasks.value.findIndex(t => t.id === task?.id)
+    if (realIdx !== -1) {
+      allTasks.value.splice(realIdx, 1, task)
+    } else {
+      allTasks.value.unshift(task)
+    }
+  }
+  splitTasks()
+  ElMessage.success('任务已提交')
+}
+
+const onTaskFailed = ({ pendingId }) => {
+  const idx = allTasks.value.findIndex(t => t.id === pendingId)
+  if (idx !== -1) allTasks.value.splice(idx, 1)
+  splitTasks()
 }
 
 const refreshCurrentTab = () => { loadAllTasks() }
@@ -465,5 +506,21 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Task list transition */
+.task-list-enter-active {
+  transition: all 0.4s ease-out;
+}
+.task-list-leave-active {
+  transition: all 0.3s ease-in;
+}
+.task-list-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+.task-list-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
 }
 </style>

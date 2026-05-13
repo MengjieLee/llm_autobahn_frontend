@@ -1,8 +1,14 @@
 <template>
   <div
     class="mtp-task-card"
-    :class="[`status-${statusKey}`, { 'is-running': isRunning }]"
+    :class="[`status-${statusKey}`, { 'is-running': isRunning, 'is-pending': isPending }]"
   >
+    <!-- 提交中遮罩 -->
+    <div v-if="isPending" class="pending-overlay">
+      <div class="pending-pulse" />
+      <span class="pending-text">正在提交…</span>
+    </div>
+
     <!-- 顶栏：名称 + 状态 + 操作 -->
     <div class="card-top">
       <div class="card-top-left">
@@ -182,6 +188,8 @@ const props = defineProps({
 defineEmits(['click', 'cancel', 'load-config'])
 
 const summary = computed(() => props.task.task_summary || {})
+
+const isPending = computed(() => !!props.task._pending)
 
 const statusKey = computed(() => {
   const raw = props.task.pipeline?.current_stage || props.task.status || 'unknown'
@@ -490,5 +498,37 @@ const formatRateMap = (rates) => {
 }
 .btn-green:hover {
   color: #529b2e;
+}
+
+/* Pending state */
+.mtp-task-card.is-pending {
+  pointer-events: none;
+}
+.pending-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 8px;
+  z-index: 1;
+}
+.pending-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #409eff;
+  animation: pending-blink 1s ease-in-out infinite;
+}
+@keyframes pending-blink {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.4; }
+}
+.pending-text {
+  font-size: 13px;
+  color: #409eff;
+  font-weight: 500;
 }
 </style>
