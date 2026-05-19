@@ -94,6 +94,24 @@
             @clear="handleFilterChange"
             @keyup.enter="handleFilterChange"
           />
+          <el-input
+            v-model="filterForm.appId"
+            placeholder="按客户 App ID 过滤"
+            clearable
+            style="width: 200px"
+            @clear="handleFilterChange"
+            @keyup.enter="handleFilterChange"
+          />
+          <el-date-picker
+            v-model="filterForm.date"
+            type="date"
+            placeholder="按日期过滤"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            clearable
+            style="width: 160px"
+            @change="handleFilterChange"
+          />
           <el-select
             v-model="filterForm.status"
             placeholder="任务状态"
@@ -603,6 +621,8 @@ const filterForm = reactive({
   username: currentUsername,
   taskName: '',
   status: '',
+  appId: '',
+  date: '',
 })
 
 const submitLoading = ref(false)
@@ -1107,6 +1127,8 @@ const loadAllTasks = async () => {
       username: filterForm.username || undefined,
       task_name: filterForm.taskName || undefined,
       status: filterForm.status || undefined,
+      app_id: filterForm.appId || undefined,
+      date: filterForm.date || undefined,
       page: pagination.page,
       page_size: pagination.pageSize,
     })
