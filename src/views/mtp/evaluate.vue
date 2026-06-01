@@ -55,6 +55,15 @@
               :value="opt.value"
             />
           </el-select>
+          <el-select
+            v-model="matFilter.hidden"
+            placeholder="可见性"
+            clearable
+            style="width: 120px"
+            @change="loadMaterializeTasks"
+          >
+            <el-option label="仅已删除" value="deleted" />
+          </el-select>
         </div>
         <div v-loading="matLoading" element-loading-text="正在加载物化脚本列表…" class="task-list">
           <TransitionGroup name="task-list">
@@ -66,6 +75,7 @@
               @click="openDetail(task)"
               @cancel="handleCancel"
               @load-config="handleLoadConfig"
+              @delete="handleDelete"
             />
           </TransitionGroup>
           <el-empty v-if="!matLoading && !materializeTasks.length" description="暂无物化脚本任务" />
@@ -145,6 +155,15 @@
               :value="o"
             />
           </el-select>
+          <el-select
+            v-model="execFilter.hidden"
+            placeholder="可见性"
+            clearable
+            style="width: 120px"
+            @change="loadExecuteTasks"
+          >
+            <el-option label="仅已删除" value="deleted" />
+          </el-select>
         </div>
         <div v-loading="execLoading" element-loading-text="正在加载任务列表…" class="task-list">
           <TransitionGroup name="task-list">
@@ -156,6 +175,7 @@
               @click="openDetail(task)"
               @cancel="handleCancel"
               @load-config="handleLoadConfig"
+              @delete="handleDelete"
             />
           </TransitionGroup>
           <el-empty v-if="!execLoading && !executeTasks.length" description="暂无自动执行任务" />
@@ -204,7 +224,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { mtpListTasks, mtpCancelTask, mtpGetTaskLaunchConfig } from '@/api/mtpEval/index'
+import { mtpListTasks, mtpCancelTask, mtpGetTaskLaunchConfig, mtpArchiveTask, mtpUnarchiveTask } from '@/api/mtpEval/index'
 import { TERMINAL_STATUSES, normalizeStatus, deriveLifecycle, STATUS_FILTER_OPTIONS, SCOPE_FILTER_OPTIONS } from './constants'
 import TaskCard from './components/TaskCard.vue'
 import TaskCreateStepper from './components/TaskCreateStepper.vue'
@@ -238,8 +258,8 @@ const allTasks = ref([])
 const execLoading = ref(false)
 const matLoading = ref(false)
 
-const execFilter = reactive({ name: '', status: '', scope: '', owner: '' })
-const matFilter = reactive({ name: '', status: '', scope: '', owner: '' })
+const execFilter = reactive({ name: '', status: '', scope: '', owner: '', hidden: '' })
+const matFilter = reactive({ name: '', status: '', scope: '', owner: '', hidden: '' })
 
 const executeTasks = ref([])
 const materializeTasks = ref([])
@@ -311,9 +331,10 @@ const splitTasks = () => {
 }
 
 /**
- * 按 Phase (status) + Result (scope) 过滤
+ * 按 Phase (status) + Result (scope) + Deleted 过滤
  * status → 匹配 deriveLifecycle().phaseClass
  * scope  → 匹配 deriveLifecycle().resultClass (或 'manual_run' 特殊处理)
+ * deleted → 匹配 deleted 状态
  */
 const applyFilters = (tasks, filter) => {
   let result = tasks
@@ -336,6 +357,12 @@ const applyFilters = (tasks, filter) => {
   if (filter.owner) {
     result = result.filter(t => (t.owner || '') === filter.owner)
   }
+  // 默认隐藏已删除任务，只有选择"仅已删除"时才显示
+  if (filter.hidden === 'deleted') {
+    result = result.filter(t => t.deleted === true)
+  } else {
+    result = result.filter(t => !t.deleted)
+  }
   return result
 }
 
@@ -352,6 +379,22 @@ const handleCancel = async (taskId) => {
     await loadAllTasks()
   } catch (e) {
     ElMessage.error('取消失败: ' + (e.message || e))
+  }
+}
+
+const handleDelete = async (task) => {
+  try {
+    // 根据当前 deleted 状态决定调用归档或取消归档
+    if (task.deleted) {
+      await mtpUnarchiveTask(task.id)
+      ElMessage.success('任务已恢复')
+    } else {
+      await mtpArchiveTask(task.id)
+      ElMessage.success('任务已归档')
+    }
+    await loadAllTasks()
+  } catch (e) {
+    ElMessage.error('操作失败: ' + (e.message || e))
   }
 }
 

@@ -60,8 +60,15 @@ export function mtpPreviewService(data) {
 // ===================== Tasks =====================
 
 /** 获取评测任务列表 */
-export function mtpListTasks({ poll = false } = {}) {
-  return autobahnBackendService({ url: `${BASE}/tasks`, method: 'get', params: poll ? { poll: 1 } : undefined })
+export function mtpListTasks({ poll = false, includeDeleted = true } = {}) {
+  return autobahnBackendService({
+    url: `${BASE}/tasks`,
+    method: 'get',
+    params: {
+      ...(poll ? { poll: 1 } : {}),
+      ...(includeDeleted !== undefined ? { include_deleted: includeDeleted } : {})
+    }
+  })
 }
 
 /** 获取单个任务详情 */
@@ -82,6 +89,16 @@ export function mtpLaunchTask(data) {
 /** 取消评测任务 */
 export function mtpCancelTask(taskId) {
   return autobahnBackendService({ url: `${BASE}/tasks/${taskId}/cancel`, method: 'post' })
+}
+
+/** 归档评测任务（软删） */
+export function mtpArchiveTask(taskId) {
+  return autobahnBackendService({ url: `${BASE}/tasks/${taskId}/archive`, method: 'post' })
+}
+
+/** 取消归档评测任务（恢复） */
+export function mtpUnarchiveTask(taskId) {
+  return autobahnBackendService({ url: `${BASE}/tasks/${taskId}/unarchive`, method: 'post' })
 }
 
 // ===================== Stats =====================

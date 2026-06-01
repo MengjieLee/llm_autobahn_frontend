@@ -212,6 +212,13 @@
     <div v-show="step === 3">
       <el-form label-width="150px">
         <div class="task-args-row">
+          <el-form-item label="API Mode">
+            <el-select v-model="taskArgs.apiMode" style="width: 200px">
+              <el-option label="chat" value="chat" />
+              <el-option label="generate" value="generate" />
+            </el-select>
+            <span class="switch-hint" style="margin-left: 8px">选择评测 API 模式，默认 chat</span>
+          </el-form-item>
           <el-form-item label="Chat Thinking">
             <el-select v-model="taskArgs.enableThinking" style="width: 200px">
               <el-option label="(backend default)" value="" />
@@ -327,6 +334,7 @@ const autoTaskName = computed(() => {
 
 // --- 任务参数 (透传) ---
 const taskArgs = reactive({
+  apiMode: 'chat',  // 默认 chat
   enableThinking: '',
   streamResponse: true,
   sampleRequestParamKeys: [],
@@ -594,18 +602,18 @@ const doPreview = async () => {
 
 const buildTaskArgs = () => {
   const args = {}
+  // 始终传递 api_mode，默认 chat
+  args.api_mode = taskArgs.apiMode || 'chat'
   if (taskArgs.streamResponse) {
     args.stream_response = true
   }
   if (taskArgs.enableThinking) {
-    args.api_mode = 'chat'
     args.enable_thinking = taskArgs.enableThinking
   }
   if (taskArgs.sampleRequestParamKeys.length) {
     args.sample_request_param_keys = taskArgs.sampleRequestParamKeys.join(',')
-    if (!args.api_mode) args.api_mode = 'chat'
   }
-  return Object.keys(args).length ? args : null
+  return args
 }
 
 const doSubmit = async () => {
@@ -710,6 +718,7 @@ const applyPreloadTask = () => {
     // 恢复任务参数（取第一个 task 的 args 作为公共参数）
     const args = t.tasks[0].args
     if (args) {
+      taskArgs.apiMode = args.api_mode || 'chat'
       taskArgs.enableThinking = args.enable_thinking || ''
       taskArgs.streamResponse = args.stream_response !== false
       taskArgs.sampleRequestParamKeys = args.sample_request_param_keys

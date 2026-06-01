@@ -26,6 +26,14 @@
       <div class="card-top-right">
         <el-button size="small" @click.stop="$emit('click', task)">查看详情</el-button>
         <el-button size="small" @click.stop="$emit('load-config', task)">加载此配置</el-button>
+        <el-button
+          :type="task.deleted ? 'success' : 'warning'"
+          size="small"
+          link
+          @click.stop="$emit('delete', task)"
+        >
+          {{ task.deleted ? '恢复' : '归档' }}
+        </el-button>
         <el-popconfirm
           v-if="canCancel"
           title="确认取消该任务？"
@@ -185,7 +193,7 @@ const props = defineProps({
   isActive: { type: Boolean, default: false },
 })
 
-defineEmits(['click', 'cancel', 'load-config'])
+defineEmits(['click', 'cancel', 'load-config', 'delete'])
 
 const summary = computed(() => props.task.task_summary || {})
 
