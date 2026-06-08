@@ -4,12 +4,15 @@ title: 变更记录
 
 
 ### 施工计划
+* 🚧 SD Eval 组件 | 👷🏻‍♂️ 李梦杰
+* ✅ 数据集纳管治理 | 👷🏻‍♂️ 李梦杰
 * ✅ SQL Studio | 👷🏻‍♂️ 李梦杰
 * ✅ Huggingface Dataviewer 组件 | 👷🏻‍♂️ 李梦杰
-* 🚧 数据集纳管治理 | 👷🏻‍♂️ 李梦杰
+* ✅ KV-Cache 理论计算 | 👷🏻‍♂️ 李梦杰
 * 数据 pipeline | TBD
 
 ### 更新记录
+* v0.6.0 | feat(olap): 新增api_name作为模型过滤及粗粒度归因分析 | 2026-06-08 | 李梦杰
 * v0.5.4 | feat(mtp-eval): 新增评测 bench tasks 状态轮询 | 2026-05-13 | 李梦杰
 * v0.5.3 | feat(mtp-eval): 优化 eval layout | 2026-05-12 | 李梦杰
 * v0.5.2 | feat(mtp-eval): 实现零信任用户透传 | 2026-05-06 | 李梦杰
