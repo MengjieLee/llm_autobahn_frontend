@@ -287,7 +287,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="场景">{{ detailTask.scenario?.label || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建人">{{ detailTask.created_by?.name || detailTask.created_by?.username || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="Block Size">{{ detailTask.config?.block_size }}</el-descriptions-item>
+          <el-descriptions-item label="Block Size">{{ formatTaskBlockSize(detailTask) }}</el-descriptions-item>
           <el-descriptions-item label="Cache Size">{{ detailTask.config?.cache_size?.toLocaleString() }}</el-descriptions-item>
           <el-descriptions-item label="创建时间 (北京)">{{ detailTask.created_at }}</el-descriptions-item>
           <el-descriptions-item label="更新时间 (北京)">{{ detailTask.updated_at }}</el-descriptions-item>
@@ -725,6 +725,35 @@ const getStageData = (row, stage) => {
 
 const getStageStatus = (row, stage) => {
   return getStageData(row, stage)?.status || 'pending'
+}
+
+const isDeepSeekModel = (model) => String(model || '').toLowerCase().startsWith('deepseek')
+
+const getTaskModels = (task) => {
+  const selectedModels = task?.query?.models || []
+  if (selectedModels.length > 0) return selectedModels
+
+  const stageOutputs = task?.pipeline?.stages?.tokenize?.model_outputs || {}
+  const outputModels = Object.keys(stageOutputs)
+  if (outputModels.length > 0) return outputModels
+
+  return []
+}
+
+const formatTaskBlockSize = (task) => {
+  const defaultBlockSize = task?.config?.block_size ?? '-'
+  const deepseekBlockSize = task?.config?.model_block_sizes?.deepseek ?? 256
+  const models = getTaskModels(task)
+
+  if (models.length === 0) return defaultBlockSize
+
+  const hasDeepSeek = models.some(isDeepSeekModel)
+  if (!hasDeepSeek) return defaultBlockSize
+
+  const hasOtherModel = models.some(model => !isDeepSeekModel(model))
+  if (!hasOtherModel) return deepseekBlockSize
+
+  return `默认 ${defaultBlockSize} / DeepSeek ${deepseekBlockSize}`
 }
 
 const fileStatusType = (status) => {
